@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
   // CEF applications have multiple sub-processes (render, plugin, GPU, etc)
   // that share the same executable. This function checks the command-line and,
   // if this is a sub-process, executes the appropriate logic.
-  int exit_code = CefExecuteProcess(main_args, app.get(), NULL);
+  int exit_code = CefExecuteProcess(main_args, app, NULL);
   if (exit_code >= 0) {
     // The sub-process has completed so return here.
     return exit_code;
@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
   settings.windowless_rendering_enabled = true;
 
   // Initialize CEF for the browser process.
-  CefInitialize(main_args, settings, app.get(), NULL);
+  CefInitialize(main_args, settings, app, NULL);
 
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
   // called.
