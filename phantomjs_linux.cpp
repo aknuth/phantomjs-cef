@@ -50,6 +50,7 @@ int main(int argc, char* argv[]) {
   CefSettings settings;
   // TODO: make this configurable like previously in phantomjs
   settings.ignore_certificate_errors = true;
+  settings.remote_debugging_port = 12345;
 
   // Install xlib error handlers so that the application won't be terminated
   // on non-fatal errors.
