@@ -45,6 +45,15 @@ PhantomJSHandler* PhantomJSHandler::GetInstance() {
   return g_instance;
 }
 
+void PhantomJSHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
+                                  const CefString& title) {
+  CEF_REQUIRE_UI_THREAD();
+  std::string titleStr(title);
+
+  std::cerr << "title changed to: " << title << '\n';
+}
+
+
 void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
