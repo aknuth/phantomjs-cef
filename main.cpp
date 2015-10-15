@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
   settings.ignore_certificate_errors = true;
   settings.remote_debugging_port = 12345;
   settings.windowless_rendering_enabled = true;
+  settings.no_sandbox = true;
 
   // Initialize CEF for the browser process.
   CefInitialize(main_args, settings, app, NULL);
