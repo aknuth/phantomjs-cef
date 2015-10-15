@@ -56,6 +56,11 @@ void PhantomJSHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
   std::cerr << "title changed to: " << title << '\n';
 }
 
+bool PhantomJSHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
+{
+  std::cerr << "Console message from " << source << ':' << line << ": " << message << '\n';
+  return true;
+}
 
 void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
@@ -129,6 +134,8 @@ void PhantomJSHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool 
 
   std::cerr << "load state change:" << isLoading << canGoBack << canGoForward << "\n";
   if (!isLoading) {
+    auto frame = browser->GetMainFrame();
+    frame->ExecuteJavaScript("console.log(\"Hello World!\"); console.trace();", frame->GetURL(), 0);
     std::cerr << "printing\n";
     std::string path("/tmp/test.pdf");
     CefPdfPrintSettings settings;

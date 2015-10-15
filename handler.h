@@ -43,6 +43,10 @@ class PhantomJSHandler : public CefClient,
   // CefDisplayHandler methods:
   virtual void OnTitleChange(CefRefPtr<CefBrowser> browser,
                              const CefString& title) OVERRIDE;
+  virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
+                             const CefString& message,
+                             const CefString& source,
+                             int line) OVERRIDE;
 
   // CefLifeSpanHandler methods:
   virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
