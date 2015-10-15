@@ -13,7 +13,8 @@ class PhantomJSHandler : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
                       public CefLoadHandler,
-                      public CefRenderHandler {
+                      public CefRenderHandler
+{
  public:
   PhantomJSHandler();
   ~PhantomJSHandler();
@@ -22,16 +23,20 @@ class PhantomJSHandler : public CefClient,
   static PhantomJSHandler* GetInstance();
 
   // CefClient methods:
-  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE {
+  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE
+  {
     return this;
   }
-  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE {
+  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE
+  {
     return this;
   }
-  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE {
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE
+  {
     return this;
   }
-  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE {
+  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE
+  {
     return this;
   }
 

@@ -36,17 +36,20 @@ PhantomJSHandler::PhantomJSHandler()
   g_instance = this;
 }
 
-PhantomJSHandler::~PhantomJSHandler() {
+PhantomJSHandler::~PhantomJSHandler()
+{
   g_instance = NULL;
 }
 
 // static
-PhantomJSHandler* PhantomJSHandler::GetInstance() {
+PhantomJSHandler* PhantomJSHandler::GetInstance()
+{
   return g_instance;
 }
 
 void PhantomJSHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
-                                  const CefString& title) {
+                                  const CefString& title)
+{
   CEF_REQUIRE_UI_THREAD();
   std::string titleStr(title);
 
@@ -54,7 +57,8 @@ void PhantomJSHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
 }
 
 
-void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
+void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
+{
   CEF_REQUIRE_UI_THREAD();
 
   std::cerr << "browser created\n";
@@ -62,7 +66,8 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   browser_list_.push_back(browser);
 }
 
-bool PhantomJSHandler::DoClose(CefRefPtr<CefBrowser> browser) {
+bool PhantomJSHandler::DoClose(CefRefPtr<CefBrowser> browser)
+{
   CEF_REQUIRE_UI_THREAD();
 
   // Closing the main window requires special handling. See the DoClose()
@@ -78,7 +83,8 @@ bool PhantomJSHandler::DoClose(CefRefPtr<CefBrowser> browser) {
   return false;
 }
 
-void PhantomJSHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
+void PhantomJSHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
+{
   CEF_REQUIRE_UI_THREAD();
 
   // Remove from the list of existing browsers.
@@ -100,7 +106,8 @@ void PhantomJSHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 ErrorCode errorCode,
                                 const CefString& errorText,
-                                const CefString& failedUrl) {
+                                const CefString& failedUrl)
+{
   CEF_REQUIRE_UI_THREAD();
 
   // Don't display an error for downloaded files.
@@ -145,7 +152,8 @@ void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType t
   // do nothing
 }
 
-void PhantomJSHandler::CloseAllBrowsers(bool force_close) {
+void PhantomJSHandler::CloseAllBrowsers(bool force_close)
+{
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute on the UI thread.
     CefPostTask(TID_UI,
