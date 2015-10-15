@@ -139,9 +139,6 @@ void PhantomJSHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool 
     std::cerr << "printing\n";
     std::string path("/tmp/test.pdf");
     CefPdfPrintSettings settings;
-    settings.page_width = 100;
-    settings.page_height = 100;
-
     browser->GetHost()->PrintToPDF(path, settings, new PdfPrintCallback);
   }
 }
