@@ -132,6 +132,19 @@ void PhantomJSHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool 
   }
 }
 
+bool PhantomJSHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
+{
+  // TODO: make this configurable
+  rect.Set(0, 0, 800, 600);
+  return true;
+}
+
+void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height)
+{
+  // TODO: grab screenshots?
+  // do nothing
+}
+
 void PhantomJSHandler::CloseAllBrowsers(bool force_close) {
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute on the UI thread.

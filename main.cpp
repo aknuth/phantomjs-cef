@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
   // TODO: make this configurable like previously in phantomjs
   settings.ignore_certificate_errors = true;
   settings.remote_debugging_port = 12345;
+  settings.windowless_rendering_enabled = true;
 
   // Initialize CEF for the browser process.
   CefInitialize(main_args, settings, app.get(), NULL);

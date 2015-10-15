@@ -12,7 +12,8 @@
 class PhantomJSHandler : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
-                      public CefLoadHandler {
+                      public CefLoadHandler,
+                      public CefRenderHandler {
  public:
   PhantomJSHandler();
   ~PhantomJSHandler();
@@ -28,6 +29,9 @@ class PhantomJSHandler : public CefClient,
     return this;
   }
   virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE {
+    return this;
+  }
+  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE {
     return this;
   }
 
@@ -50,6 +54,13 @@ class PhantomJSHandler : public CefClient,
                                     bool isLoading,
                                     bool canGoBack,
                                     bool canGoForward) OVERRIDE;
+
+  // CefRenderHandler methods:
+  virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) OVERRIDE;
+  virtual void OnPaint(CefRefPtr<CefBrowser> browser,
+                       PaintElementType type,
+                       const RectList& dirtyRects,
+                       const void* buffer, int width, int height) OVERRIDE;
 
   // Request that all existing browser windows close.
   void CloseAllBrowsers(bool force_close);

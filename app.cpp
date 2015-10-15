@@ -53,6 +53,8 @@ void PhantomJSApp::OnContextInitialized() {
   if (url.empty())
     url = "http://www.google.com";
 
+  window_info.SetAsWindowless(0, true);
+
   // Create the first browser window.
   CefBrowserHost::CreateBrowser(window_info, handler.get(), url,
                                 browser_settings, NULL);
