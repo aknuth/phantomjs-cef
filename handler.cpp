@@ -47,6 +47,17 @@ PhantomJSHandler* PhantomJSHandler::GetInstance()
   return g_instance;
 }
 
+bool PhantomJSHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+                                                CefProcessId source_process,
+                                                CefRefPtr<CefProcessMessage> message)
+{
+  if (message->GetName() == "exit") {
+    browser->GetHost()->CloseBrowser(true);
+    return true;
+  }
+  return false;
+}
+
 void PhantomJSHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
                                   const CefString& title)
 {

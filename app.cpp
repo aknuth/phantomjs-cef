@@ -101,8 +101,7 @@ public:
                CefString &exception) OVERRIDE
   {
     if (name == "exit") {
-      // TODO: this crashes currently
-//       CefPostTask(TID_UI, base::Bind(&PhantomJSHandler::CloseAllBrowsers, PhantomJSHandler::GetInstance(), true));
+      CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, CefProcessMessage::Create("exit"));
       return true;
     }
     exception = std::string("Unknown PhantomJS function: ") + name.ToString();
