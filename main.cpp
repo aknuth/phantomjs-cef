@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
   settings.remote_debugging_port = 12345;
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
-  settings.log_severity = LOGSEVERITY_VERBOSE;
+//   settings.log_severity = LOGSEVERITY_VERBOSE;
 
   // Initialize CEF for the browser process.
   CefInitialize(main_args, settings, app, NULL);
