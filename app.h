@@ -10,18 +10,32 @@
 class PrintHandler;
 
 class PhantomJSApp : public CefApp,
-                  public CefBrowserProcessHandler {
+                     public CefBrowserProcessHandler,
+                     public CefRenderProcessHandler
+{
  public:
   PhantomJSApp();
   ~PhantomJSApp();
 
   // CefApp methods:
-  virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler()
-      OVERRIDE { return this; }
+  virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() OVERRIDE
+  {
+    return this;
+  }
+
+  virtual CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() OVERRIDE
+  {
+    return this;
+  }
 
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
   virtual CefRefPtr<CefPrintHandler> GetPrintHandler() OVERRIDE;
+
+  // CefRenderProcessHandler methods:
+  void OnWebKitInitialized() OVERRIDE;
+  void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                        CefRefPtr<CefV8Context> context) OVERRIDE;
 
  private:
   CefRefPtr<PrintHandler> m_printHandler;

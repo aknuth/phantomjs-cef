@@ -14,6 +14,7 @@
 #include "include/cef_browser.h"
 #include "include/cef_command_line.h"
 #include "include/wrapper/cef_helpers.h"
+#include "include/wrapper/cef_closure_task.h"
 
 PhantomJSApp::PhantomJSApp()
   : m_printHandler(new PrintHandler)
@@ -89,4 +90,70 @@ CefRefPtr<CefPrintHandler> PhantomJSApp::GetPrintHandler()
 {
   std::cerr << "print handler accessed\n";
   return m_printHandler;
+}
+
+namespace {
+class V8Handler : public CefV8Handler
+{
+public:
+  bool Execute(const CefString &name, CefRefPtr<CefV8Value> object,
+               const CefV8ValueList &arguments, CefRefPtr<CefV8Value> &retval,
+               CefString &exception) OVERRIDE
+  {
+    if (name == "exit") {
+      // TODO: this crashes currently
+//       CefPostTask(TID_UI, base::Bind(&PhantomJSHandler::CloseAllBrowsers, PhantomJSHandler::GetInstance(), true));
+      return true;
+    }
+    exception = std::string("Unknown PhantomJS function: ") + name.ToString();
+    return true;
+    std::cerr << "V8Handler: " << name << '\t' << object << '\t' << arguments.size() << '\t' << exception;
+    return false;
+  }
+private:
+  IMPLEMENT_REFCOUNTING(V8Handler);
+};
+}
+
+void PhantomJSApp::OnWebKitInitialized()
+{
+// Define the extension contents.
+  std::string extensionCode =
+    "var phantom;\n"
+    "if (!phantom)\n"
+    "  phantom = {};\n"
+    "(function() {\n"
+    "  phantom.WebPage = function() {"
+    "    this.open = function(url, callback) {"
+    "      callback(1);"
+    "    };"
+    "  };\n"
+    "  phantom.require = function(file) {\n"
+    "    if (file == \"webpage\") {\n"
+    "      return { create: function() { return new phantom.WebPage; } };\n"
+    "    }"
+    "    native function require();\n"
+    "    return require(file);\n"
+    "  };\n"
+    "  phantom.exit = function() {\n"
+    "    native function exit();\n"
+    "    exit();"
+    "  };"
+    "})();\n";
+
+  // Create an instance of my CefV8Handler object.
+  CefRefPtr<CefV8Handler> handler = new V8Handler();
+
+  // Register the extension.
+  CefRegisterExtension("v8/phantomjs", extensionCode, handler);
+}
+
+void PhantomJSApp::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                    CefRefPtr<CefV8Context> context)
+{
+  auto global = context->GetGlobal();
+  auto phantom = global->GetValue("phantom");
+
+  // forward extension code into global namespace
+  global->SetValue("require", phantom->GetValue("require"), V8_PROPERTY_ATTRIBUTE_NONE);
 }
