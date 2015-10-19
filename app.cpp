@@ -6,6 +6,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 
 #include "handler.h"
 #include "print_handler.h"
@@ -23,7 +24,8 @@ PhantomJSApp::~PhantomJSApp()
 {
 }
 
-void PhantomJSApp::OnContextInitialized() {
+void PhantomJSApp::OnContextInitialized()
+{
   CEF_REQUIRE_UI_THREAD();
 
   // Information used when creating the native window.
@@ -34,6 +36,7 @@ void PhantomJSApp::OnContextInitialized() {
   // CreateWindowEx().
   window_info.SetAsPopup(NULL, "phantomjs");
 #endif
+  window_info.SetAsWindowless(0, true);
 
   // PhantomJSHandler implements browser-level callbacks.
   CefRefPtr<PhantomJSHandler> handler(new PhantomJSHandler());
@@ -43,21 +46,43 @@ void PhantomJSApp::OnContextInitialized() {
   // TODO: make this configurable
   browser_settings.web_security = STATE_DISABLED;
 
-  std::string url;
-
-  // Check if a "--url=" value was provided via the command-line. If so, use
-  // that instead of the default URL.
-  CefRefPtr<CefCommandLine> command_line =
-      CefCommandLine::GetGlobalCommandLine();
-  url = command_line->GetSwitchValue("url");
-  if (url.empty())
-    url = "http://www.google.com";
-
-  window_info.SetAsWindowless(0, true);
-
   // Create the first browser window.
-  CefBrowserHost::CreateBrowser(window_info, handler.get(), url,
-                                browser_settings, NULL);
+  auto browser = CefBrowserHost::CreateBrowserSync(window_info, handler.get(), "about:blank",
+                                                   browser_settings, NULL);
+  if (!browser) {
+    std::cerr << "Failed to create initial browser synchronously.\n";
+    return;
+  }
+
+  auto frame = browser->GetMainFrame();
+
+  // load empty html content
+  frame->LoadString("<html><head></head><body></body></html>", "file:///phantom.html");
+
+  // inject user provided js file
+  auto command_line = CefCommandLine::GetGlobalCommandLine();
+  if (command_line->HasArguments()) {
+    CefCommandLine::ArgumentList arguments;
+    command_line->GetArguments(arguments);
+    for (auto argument : arguments) {
+      std::ifstream file(argument);
+      if (!file.is_open()) {
+        std::cerr << "Failed to open input file: " << argument << '\n';
+        // TODO: quit application
+        return;
+      }
+      std::string line;
+      std::string fileContents;
+      while (std::getline(file, line)) {
+        fileContents.append(line);
+        fileContents.append("\n");
+      }
+      if (fileContents.empty()) {
+        continue; // otherwise we'll assert in the execution below
+      }
+      frame->ExecuteJavaScript(fileContents, argument, 1);
+    }
+  }
 }
 
 CefRefPtr<CefPrintHandler> PhantomJSApp::GetPrintHandler()
