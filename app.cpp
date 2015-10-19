@@ -4,6 +4,7 @@
 
 #include "app.h"
 
+#include <QFile>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -116,29 +117,9 @@ private:
 
 void PhantomJSApp::OnWebKitInitialized()
 {
-// Define the extension contents.
-  std::string extensionCode =
-    "var phantom;\n"
-    "if (!phantom)\n"
-    "  phantom = {};\n"
-    "(function() {\n"
-    "  phantom.WebPage = function() {"
-    "    this.open = function(url, callback) {"
-    "      callback(1);"
-    "    };"
-    "  };\n"
-    "  phantom.require = function(file) {\n"
-    "    if (file == \"webpage\") {\n"
-    "      return { create: function() { return new phantom.WebPage; } };\n"
-    "    }"
-    "    native function require();\n"
-    "    return require(file);\n"
-    "  };\n"
-    "  phantom.exit = function() {\n"
-    "    native function exit();\n"
-    "    exit();"
-    "  };"
-    "})();\n";
+  QFile file(":/webkit_extension.js");
+  file.open(QIODevice::ReadOnly | QIODevice::Text);
+  std::string extensionCode = file.readAll().toStdString();
 
   // Create an instance of my CefV8Handler object.
   CefRefPtr<CefV8Handler> handler = new V8Handler();

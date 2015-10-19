@@ -2,6 +2,8 @@
 // All rights reserved. Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+#include <QGuiApplication>
+
 #include "app.h"
 
 #include "include/base/cef_logging.h"
@@ -10,7 +12,7 @@
 int main(int argc, char* argv[]) {
   // Provide CEF with command-line arguments.
   CefMainArgs main_args(argc, argv);
-  
+
   // PhantomJSApp implements application-level callbacks. It will create the first
   // browser instance in OnContextInitialized() after CEF has initialized.
   CefRefPtr<PhantomJSApp> app(new PhantomJSApp);
@@ -23,6 +25,10 @@ int main(int argc, char* argv[]) {
     // The sub-process has completed so return here.
     return exit_code;
   }
+
+  // NOTE: we do not run the Qt eventloop, so don't use signals/slots or similar
+  // we mostly integrate Qt for its painting API and the resource system
+  QGuiApplication qtApp(argc, argv);
 
   // Specify CEF global settings here.
   CefSettings settings;

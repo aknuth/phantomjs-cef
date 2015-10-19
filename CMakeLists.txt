@@ -2,6 +2,9 @@
 # reserved. Use of this source code is governed by a BSD-style license that
 # can be found in the LICENSE file.
 
+find_package(Qt5 NO_MODULE REQUIRED COMPONENTS Gui)
+set(CMAKE_AUTORCC TRUE)
+
 #
 # Source files.
 #
@@ -12,7 +15,8 @@ set(PHANTOMJS_SRCS
   handler.cpp
   print_handler.cpp
   main.cpp
-  )
+  resources.qrc
+)
 
 #
 # Shared configuration.
@@ -33,7 +37,7 @@ SET_CEF_TARGET_OUT_DIR()
 # Executable target.
 add_executable(${CEF_TARGET} ${PHANTOMJS_SRCS})
 add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
-target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS})
+target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS} Qt5::Gui)
 
 # Set rpath so that libraries can be placed next to the executable.
 set_target_properties(${CEF_TARGET} PROPERTIES INSTALL_RPATH "$ORIGIN")
