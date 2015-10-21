@@ -9,7 +9,8 @@
 #include "include/base/cef_logging.h"
 
 // Entry point function for all processes.
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
   // Provide CEF with command-line arguments.
   CefMainArgs main_args(argc, argv);
 

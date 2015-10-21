@@ -9,6 +9,7 @@
 #include <iostream>
 #include <codecvt>
 #include <locale>
+#include <algorithm>
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -21,36 +22,20 @@
 
 #include "print_handler.h"
 
-std::ostream& operator<<(std::ostream &stream, const wchar_t *input)
+std::ostream& operator<<(std::ostream& stream, const wchar_t *input)
 {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> utf8_conv;
     return stream << utf8_conv.to_bytes(input);
 }
 
-namespace {
-
-PhantomJSHandler* g_instance = NULL;
-
-}  // namespace
-
 PhantomJSHandler::PhantomJSHandler()
-    : is_closing_(false)
-    , m_messageRouter(CefMessageRouterBrowserSide::Create(messageRouterConfig()))
+    : m_messageRouter(CefMessageRouterBrowserSide::Create(messageRouterConfig()))
 {
-  DCHECK(!g_instance);
-  g_instance = this;
   m_messageRouter->AddHandler(this, false);
 }
 
 PhantomJSHandler::~PhantomJSHandler()
 {
-  g_instance = NULL;
-}
-
-// static
-PhantomJSHandler* PhantomJSHandler::GetInstance()
-{
-  return g_instance;
 }
 
 CefMessageRouterConfig PhantomJSHandler::messageRouterConfig()
@@ -119,20 +104,12 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 
   std::cerr << "browser created\n";
   // Add to the list of existing browsers.
-  browser_list_.push_back(browser);
+  m_browsers.push_back(browser);
 }
 
 bool PhantomJSHandler::DoClose(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
-
-  // Closing the main window requires special handling. See the DoClose()
-  // documentation in the CEF header for a detailed destription of this
-  // process.
-  if (browser_list_.size() == 1) {
-    // Set a flag to indicate that the window close should be allowed.
-    is_closing_ = true;
-  }
 
   // Allow the close. For windowed browsers this will result in the OS close
   // event being sent.
@@ -146,15 +123,12 @@ void PhantomJSHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
   m_messageRouter->OnBeforeClose(browser);
 
   // Remove from the list of existing browsers.
-  BrowserList::iterator bit = browser_list_.begin();
-  for (; bit != browser_list_.end(); ++bit) {
-    if ((*bit)->IsSame(browser)) {
-      browser_list_.erase(bit);
-      break;
-    }
-  }
+  auto it = remove_if(m_browsers.begin(), m_browsers.end(), [browser] (const CefRefPtr<CefBrowser>& other) {
+    return other->IsSame(browser);
+  });
+  m_browsers.erase(it, m_browsers.end());
 
-  if (browser_list_.empty()) {
+  if (m_browsers.empty()) {
     // All browser windows have closed. Quit the application message loop.
     CefQuitMessageLoop();
   }
@@ -248,8 +222,10 @@ void PhantomJSHandler::CloseAllBrowsers(bool force_close)
     return;
   }
 
-  while (!browser_list_.empty())
-    browser_list_.back()->GetHost()->CloseBrowser(force_close);
+  for (auto browser: m_browsers) {
+    browser->GetHost()->CloseBrowser(force_close);
+  }
+  LOG_ASSERT(m_browsers.empty());
 }
 
 bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,

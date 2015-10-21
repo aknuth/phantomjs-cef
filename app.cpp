@@ -74,9 +74,9 @@ namespace {
 class V8Handler : public CefV8Handler
 {
 public:
-  bool Execute(const CefString &name, CefRefPtr<CefV8Value> object,
-               const CefV8ValueList &arguments, CefRefPtr<CefV8Value> &retval,
-               CefString &exception) OVERRIDE
+  bool Execute(const CefString& name, CefRefPtr<CefV8Value> object,
+               const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval,
+               CefString& exception) override
   {
     if (name == "exit") {
       CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, CefProcessMessage::Create("exit"));
@@ -84,8 +84,6 @@ public:
     }
     exception = std::string("Unknown PhantomJS function: ") + name.ToString();
     return true;
-    std::cerr << "V8Handler: " << name << '\t' << object << '\t' << arguments.size() << '\t' << exception;
-    return false;
   }
 private:
   IMPLEMENT_REFCOUNTING(V8Handler);

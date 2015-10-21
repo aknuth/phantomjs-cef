@@ -12,7 +12,7 @@ class PdfPrintCallback : public CefPdfPrintCallback
 public:
   // CefPdfPrintCallback methods:
   // TODO: move this out of the handler?
-  virtual void OnPdfPrintFinished(const CefString& path, bool ok) OVERRIDE;
+  virtual void OnPdfPrintFinished(const CefString& path, bool ok) override;
 
 private:
   // Include the default reference counting implementation.
@@ -23,11 +23,12 @@ class PrintHandler : public CefPrintHandler
 {
  public:
   // CefPrintHandler methods:
-  virtual CefSize GetPdfPaperSize(int device_units_per_inch) OVERRIDE;
-  virtual bool OnPrintDialog(bool has_selection, CefRefPtr<CefPrintDialogCallback> callback) OVERRIDE;
-  virtual bool OnPrintJob(const CefString& document_name, const CefString& pdf_file_path, CefRefPtr<CefPrintJobCallback> callback) OVERRIDE;
-  virtual void OnPrintReset() OVERRIDE;
-  virtual void OnPrintSettings(CefRefPtr<CefPrintSettings> settings, bool get_defaults) OVERRIDE;
+  virtual CefSize GetPdfPaperSize(int device_units_per_inch) override;
+  virtual bool OnPrintDialog(bool has_selection, CefRefPtr<CefPrintDialogCallback> callback) override;
+  virtual bool OnPrintJob(const CefString& document_name, const CefString& pdf_file_path,
+                          CefRefPtr<CefPrintJobCallback> callback) override;
+  virtual void OnPrintReset() override;
+  virtual void OnPrintSettings(CefRefPtr<CefPrintSettings> settings, bool get_defaults) override;
 
  private:
   // Include the default reference counting implementation.

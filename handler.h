@@ -8,7 +8,7 @@
 #include "include/cef_client.h"
 #include "include/wrapper/cef_message_router.h"
 
-#include <list>
+#include <vector>
 #include <unordered_map>
 
 class PhantomJSHandler : public CefClient,
@@ -24,90 +24,87 @@ class PhantomJSHandler : public CefClient,
   ~PhantomJSHandler();
 
   // Provide access to the single global instance of this object.
-  static PhantomJSHandler* GetInstance();
   static CefMessageRouterConfig messageRouterConfig();
 
   CefRefPtr<CefBrowser> createBrowser(const CefString& url);
 
   // CefClient methods:
-  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE
+  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() override
   {
     return this;
   }
-  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE
+  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override
   {
     return this;
   }
-  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() override
   {
     return this;
   }
-  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE
+  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() override
   {
     return this;
   }
-  virtual CefRefPtr<CefRequestHandler> GetRequestHandler() OVERRIDE
+  virtual CefRefPtr<CefRequestHandler> GetRequestHandler() override
   {
     return this;
   }
 
-  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) OVERRIDE;
+  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
 
   // CefDisplayHandler methods:
   virtual void OnTitleChange(CefRefPtr<CefBrowser> browser,
-                             const CefString& title) OVERRIDE;
+                             const CefString& title) override;
   virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
                              const CefString& message,
                              const CefString& source,
-                             int line) OVERRIDE;
+                             int line) override;
 
   // CefLifeSpanHandler methods:
-  virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  virtual bool DoClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
+  virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
+  virtual bool DoClose(CefRefPtr<CefBrowser> browser) override;
+  virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
   // CefLoadHandler methods:
   virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame,
                            ErrorCode errorCode,
                            const CefString& errorText,
-                           const CefString& failedUrl) OVERRIDE;
+                           const CefString& failedUrl) override;
   virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
                                     bool isLoading,
                                     bool canGoBack,
-                                    bool canGoForward) OVERRIDE;
+                                    bool canGoForward) override;
 
   // CefRenderHandler methods:
-  virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) OVERRIDE;
+  virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
   virtual void OnPaint(CefRefPtr<CefBrowser> browser,
                        PaintElementType type,
                        const RectList& dirtyRects,
-                       const void* buffer, int width, int height) OVERRIDE;
+                       const void* buffer, int width, int height) override;
 
   // CefRequestHandler methods:
   void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
-                                 TerminationStatus status) OVERRIDE;
+                                 TerminationStatus status) override;
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                      CefRefPtr<CefRequest> request, bool is_redirect) OVERRIDE;
+                      CefRefPtr<CefRequest> request, bool is_redirect) override;
 
   // CefMessageRouterBrowserSide::Handler methods:
   bool OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                int64 query_id, const CefString & request, bool persistent,
-               CefRefPtr<Callback> callback) OVERRIDE;
+               CefRefPtr<Callback> callback) override;
   void OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                       int64 query_id) OVERRIDE;
+                       int64 query_id) override;
 
   // Request that all existing browser windows close.
   void CloseAllBrowsers(bool force_close);
 
-  bool IsClosing() const { return is_closing_; }
-
  private:
   // List of existing browser windows. Only accessed on the CEF UI thread.
-  typedef std::list<CefRefPtr<CefBrowser> > BrowserList;
-  BrowserList browser_list_;
+  typedef std::vector<CefRefPtr<CefBrowser>> BrowserList;
+  BrowserList m_browsers;
 
-  bool is_closing_;
+  bool m_isClosing;
 
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
   std::unordered_map<int, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingOpenBrowserRequests;

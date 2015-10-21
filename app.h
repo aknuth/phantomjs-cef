@@ -19,29 +19,29 @@ class PhantomJSApp : public CefApp,
   ~PhantomJSApp();
 
   // CefApp methods:
-  virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() OVERRIDE
+  virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override
   {
     return this;
   }
 
-  virtual CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() OVERRIDE
+  virtual CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override
   {
     return this;
   }
-  void OnRegisterCustomSchemes(CefRefPtr<CefSchemeRegistrar> registrar) OVERRIDE;
+  void OnRegisterCustomSchemes(CefRefPtr<CefSchemeRegistrar> registrar) override;
 
   // CefBrowserProcessHandler methods:
-  virtual void OnContextInitialized() OVERRIDE;
-  virtual CefRefPtr<CefPrintHandler> GetPrintHandler() OVERRIDE;
+  virtual void OnContextInitialized() override;
+  virtual CefRefPtr<CefPrintHandler> GetPrintHandler() override;
 
   // CefRenderProcessHandler methods:
-  void OnWebKitInitialized() OVERRIDE;
+  void OnWebKitInitialized() override;
   void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                        CefRefPtr<CefV8Context> context) OVERRIDE;
+                        CefRefPtr<CefV8Context> context) override;
   void OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                         CefRefPtr<CefV8Context> context) OVERRIDE;
+                         CefRefPtr<CefV8Context> context) override;
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
-                                CefRefPtr<CefProcessMessage> message) OVERRIDE;
+                                CefRefPtr<CefProcessMessage> message) override;
  private:
   CefRefPtr<PrintHandler> m_printHandler;
   CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
