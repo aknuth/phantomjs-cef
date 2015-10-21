@@ -6,6 +6,7 @@
 #define CEF_TESTS_PHANTOMJS_APP_H_
 
 #include "include/cef_app.h"
+#include "include/wrapper/cef_message_router.h"
 
 class PrintHandler;
 
@@ -37,9 +38,13 @@ class PhantomJSApp : public CefApp,
   void OnWebKitInitialized() OVERRIDE;
   void OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                         CefRefPtr<CefV8Context> context) OVERRIDE;
-
+  void OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                         CefRefPtr<CefV8Context> context) OVERRIDE;
+  bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
+                                CefRefPtr<CefProcessMessage> message) OVERRIDE;
  private:
   CefRefPtr<PrintHandler> m_printHandler;
+  CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSApp);
 };

@@ -31,9 +31,11 @@ PhantomJSHandler* g_instance = NULL;
 
 PhantomJSHandler::PhantomJSHandler()
     : is_closing_(false)
+    , m_messageRouter(CefMessageRouterBrowserSide::Create(messageRouterConfig()))
 {
   DCHECK(!g_instance);
   g_instance = this;
+  m_messageRouter->AddHandler(this, false);
 }
 
 PhantomJSHandler::~PhantomJSHandler()
@@ -47,11 +49,24 @@ PhantomJSHandler* PhantomJSHandler::GetInstance()
   return g_instance;
 }
 
+CefMessageRouterConfig PhantomJSHandler::messageRouterConfig()
+{
+  CefMessageRouterConfig config;
+  config.js_cancel_function = "cancelPhantomJsQuery";
+  config.js_query_function = "startPhantomJsQuery";
+  return config;
+}
+
 bool PhantomJSHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                                 CefProcessId source_process,
                                                 CefRefPtr<CefProcessMessage> message)
 {
+  std::cerr << "handler got message: " << message->GetName() << '\n';
+  if (m_messageRouter->OnProcessMessageReceived(browser, source_process, message)) {
+    return true;
+  }
   if (message->GetName() == "exit") {
+    m_messageRouter->CancelPending(browser, nullptr);
     browser->GetHost()->CloseBrowser(true);
     return true;
   }
@@ -102,6 +117,8 @@ bool PhantomJSHandler::DoClose(CefRefPtr<CefBrowser> browser)
 void PhantomJSHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
+
+  m_messageRouter->OnBeforeClose(browser);
 
   // Remove from the list of existing browsers.
   BrowserList::iterator bit = browser_list_.begin();
@@ -159,6 +176,17 @@ void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType t
   // do nothing
 }
 
+void PhantomJSHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status)
+{
+  m_messageRouter->OnRenderProcessTerminated(browser);
+}
+
+bool PhantomJSHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool is_redirect)
+{
+  m_messageRouter->OnBeforeBrowse(browser, frame);
+  return false;
+}
+
 void PhantomJSHandler::CloseAllBrowsers(bool force_close)
 {
   if (!CefCurrentlyOn(TID_UI)) {
@@ -174,4 +202,18 @@ void PhantomJSHandler::CloseAllBrowsers(bool force_close)
   BrowserList::const_iterator it = browser_list_.begin();
   for (; it != browser_list_.end(); ++it)
     (*it)->GetHost()->CloseBrowser(force_close);
+}
+
+bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                               int64 query_id, const CefString& request, bool persistent,
+                               CefRefPtr<Callback> callback)
+{
+  callback->Success("it works!");
+  return true;
+}
+
+void PhantomJSHandler::OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                       int64 query_id)
+{
+  // nothing to do?
 }

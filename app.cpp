@@ -21,6 +21,7 @@
 
 PhantomJSApp::PhantomJSApp()
   : m_printHandler(new PrintHandler)
+  , m_messageRouter(CefMessageRouterRendererSide::Create(PhantomJSHandler::messageRouterConfig()))
 {
 }
 
@@ -130,4 +131,18 @@ void PhantomJSApp::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
 
   // forward extension code into global namespace
   global->SetValue("require", phantom->GetValue("require"), V8_PROPERTY_ATTRIBUTE_NONE);
+
+  m_messageRouter->OnContextCreated(browser, frame, context);
+}
+
+void PhantomJSApp::OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                     CefRefPtr<CefV8Context> context)
+{
+  m_messageRouter->OnContextReleased(browser, frame, context);
+}
+
+bool PhantomJSApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
+{
+  std::cerr << "app got message: " << message->GetName() << '\n';
+  return m_messageRouter->OnProcessMessageReceived(browser, source_process, message);
 }

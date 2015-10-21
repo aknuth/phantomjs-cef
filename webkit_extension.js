@@ -4,7 +4,18 @@ if (!phantom)
 (function() {
   phantom.WebPage = function() {
     this.open = function(url, callback) {
-      callback(1);
+      console.log("starting phantomjs query");
+      startPhantomJsQuery({
+        request: 'openWebPage',
+        persistent: false,
+        onSuccess: function() {
+          callback("success");
+        },
+        onFailure: function(errorCode, errorMessage) {
+          console.log(errorCode, errorMessage);
+          callback("error");
+        }
+      });
     };
   };
   phantom.require = function(file) {

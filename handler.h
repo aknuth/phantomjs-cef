@@ -6,6 +6,7 @@
 #define CEF_TESTS_PHANTOMJS_HANDLER_H_
 
 #include "include/cef_client.h"
+#include "include/wrapper/cef_message_router.h"
 
 #include <list>
 
@@ -13,7 +14,9 @@ class PhantomJSHandler : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
                       public CefLoadHandler,
-                      public CefRenderHandler
+                      public CefRenderHandler,
+                      public CefRequestHandler,
+                      public CefMessageRouterBrowserSide::Handler
 {
  public:
   PhantomJSHandler();
@@ -21,6 +24,7 @@ class PhantomJSHandler : public CefClient,
 
   // Provide access to the single global instance of this object.
   static PhantomJSHandler* GetInstance();
+  static CefMessageRouterConfig messageRouterConfig();
 
   // CefClient methods:
   virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE
@@ -39,6 +43,11 @@ class PhantomJSHandler : public CefClient,
   {
     return this;
   }
+  virtual CefRefPtr<CefRequestHandler> GetRequestHandler() OVERRIDE
+  {
+    return this;
+  }
+
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) OVERRIDE;
 
   // CefDisplayHandler methods:
@@ -72,6 +81,19 @@ class PhantomJSHandler : public CefClient,
                        const RectList& dirtyRects,
                        const void* buffer, int width, int height) OVERRIDE;
 
+  // CefRequestHandler methods:
+  void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
+                                 TerminationStatus status) OVERRIDE;
+  bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                      CefRefPtr<CefRequest> request, bool is_redirect) OVERRIDE;
+
+  // CefMessageRouterBrowserSide::Handler methods:
+  bool OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+               int64 query_id, const CefString & request, bool persistent,
+               CefRefPtr<Callback> callback) OVERRIDE;
+  void OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                       int64 query_id) OVERRIDE;
+
   // Request that all existing browser windows close.
   void CloseAllBrowsers(bool force_close);
 
@@ -83,6 +105,8 @@ class PhantomJSHandler : public CefClient,
   BrowserList browser_list_;
 
   bool is_closing_;
+
+  CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);
