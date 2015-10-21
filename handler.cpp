@@ -10,6 +10,10 @@
 #include <codecvt>
 #include <locale>
 
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QDebug>
+
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
 #include "include/wrapper/cef_closure_task.h"
@@ -57,6 +61,28 @@ CefMessageRouterConfig PhantomJSHandler::messageRouterConfig()
   return config;
 }
 
+CefRefPtr<CefBrowser> PhantomJSHandler::createBrowser(const CefString& url)
+{
+  // Information used when creating the native window.
+  CefWindowInfo window_info;
+#if defined(OS_WIN)
+  // On Windows we need to specify certain flags that will be passed to
+  // CreateWindowEx().
+  window_info.SetAsPopup(NULL, "phantomjs");
+#endif
+  window_info.SetAsWindowless(0, true);
+
+  // Specify CEF browser settings here.
+  CefBrowserSettings browser_settings;
+  // TODO: make this configurable
+  browser_settings.web_security = STATE_DISABLED;
+  browser_settings.universal_access_from_file_urls = STATE_ENABLED;
+  browser_settings.file_access_from_file_urls = STATE_ENABLED;
+
+  return CefBrowserHost::CreateBrowserSync(window_info, this, url, browser_settings,
+                                           NULL);
+}
+
 bool PhantomJSHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                                 CefProcessId source_process,
                                                 CefRefPtr<CefProcessMessage> message)
@@ -66,8 +92,7 @@ bool PhantomJSHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
     return true;
   }
   if (message->GetName() == "exit") {
-    m_messageRouter->CancelPending(browser, nullptr);
-    browser->GetHost()->CloseBrowser(true);
+    CloseAllBrowsers(true);
     return true;
   }
   return false;
@@ -143,6 +168,18 @@ void PhantomJSHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
 {
   CEF_REQUIRE_UI_THREAD();
 
+  // notify about load error
+  if (m_callback) {
+    m_callback->Failure(errorCode, errorText);
+  }
+  if (false) { // FIXME: why is this not working?!
+    auto it = m_pendingOpenBrowserRequests.find(browser->GetIdentifier());
+    if (it != m_pendingOpenBrowserRequests.end()) {
+      it->second->Failure(errorCode, errorText);
+      m_pendingOpenBrowserRequests.erase(it);
+    }
+  }
+
   // Don't display an error for downloaded files.
   if (errorCode == ERR_ABORTED)
     return;
@@ -160,7 +197,20 @@ void PhantomJSHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool 
 {
   CEF_REQUIRE_UI_THREAD();
 
-  std::cerr << "load state change:" << isLoading << canGoBack << canGoForward << "\n";
+  std::cerr << "load state change: " << isLoading << canGoBack << canGoForward << ", url = " << browser->GetMainFrame()->GetURL() << "\n";
+
+  if (!isLoading) { // notify about load success
+    if (m_callback) {
+      m_callback->Success(std::to_string(browser->GetIdentifier()));
+    }
+    if (false) { // FIXME: why is this not working?!
+      auto it = m_pendingOpenBrowserRequests.find(browser->GetIdentifier());
+      if (it != m_pendingOpenBrowserRequests.end()) {
+        it->second->Success(std::to_string(browser->GetIdentifier()));
+        m_pendingOpenBrowserRequests.erase(it);
+      }
+    }
+  }
 }
 
 bool PhantomJSHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
@@ -189,6 +239,8 @@ bool PhantomJSHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<C
 
 void PhantomJSHandler::CloseAllBrowsers(bool force_close)
 {
+  m_messageRouter->CancelPending(nullptr, nullptr);
+
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute on the UI thread.
     CefPostTask(TID_UI,
@@ -196,24 +248,32 @@ void PhantomJSHandler::CloseAllBrowsers(bool force_close)
     return;
   }
 
-  if (browser_list_.empty())
-    return;
-
-  BrowserList::const_iterator it = browser_list_.begin();
-  for (; it != browser_list_.end(); ++it)
-    (*it)->GetHost()->CloseBrowser(force_close);
+  while (!browser_list_.empty())
+    browser_list_.back()->GetHost()->CloseBrowser(force_close);
 }
 
 bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                int64 query_id, const CefString& request, bool persistent,
                                CefRefPtr<Callback> callback)
 {
-  callback->Success("it works!");
-  return true;
+  const auto data = QByteArray::fromStdString(request.ToString());
+  QJsonParseError error;
+  const auto json = QJsonDocument::fromJson(data, &error).object();
+  const auto type = json.value(QStringLiteral("type")).toString();
+//   qDebug() << data << json << error.errorString() << type;
+  if (type == QLatin1String("openWebPage")) {
+    auto subBrowser = createBrowser(json.value(QStringLiteral("url")).toString().toStdString());
+    std::cerr << "sub browser created\n" << std::endl;
+    // FIXME: why is this not working?!
+//     m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = callback;
+    m_callback = callback;
+    return true;
+  }
+  return false;
 }
 
 void PhantomJSHandler::OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                        int64 query_id)
 {
-  // nothing to do?
+  // TODO: remove callback
 }

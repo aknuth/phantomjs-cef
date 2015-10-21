@@ -3,16 +3,22 @@ if (!phantom)
   phantom = {};
 (function() {
   phantom.WebPage = function() {
+    webpage = this;
     this.open = function(url, callback) {
       console.log("starting phantomjs query");
       startPhantomJsQuery({
-        request: 'openWebPage',
+        request: JSON.stringify({
+          type: 'openWebPage',
+          url: url
+        }),
         persistent: false,
-        onSuccess: function() {
+        onSuccess: function(response) {
+          console.log(response);
+          webpage.id = response;
           callback("success");
         },
         onFailure: function(errorCode, errorMessage) {
-          console.log(errorCode, errorMessage);
+          console.log("error: " + errorCode + ": " + errorMessage);
           callback("error");
         }
       });

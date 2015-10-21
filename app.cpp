@@ -41,29 +41,11 @@ void PhantomJSApp::OnContextInitialized()
 {
   CEF_REQUIRE_UI_THREAD();
 
-  // Information used when creating the native window.
-  CefWindowInfo window_info;
-
-#if defined(OS_WIN)
-  // On Windows we need to specify certain flags that will be passed to
-  // CreateWindowEx().
-  window_info.SetAsPopup(NULL, "phantomjs");
-#endif
-  window_info.SetAsWindowless(0, true);
-
   // PhantomJSHandler implements browser-level callbacks.
   CefRefPtr<PhantomJSHandler> handler(new PhantomJSHandler());
 
-  // Specify CEF browser settings here.
-  CefBrowserSettings browser_settings;
-  // TODO: make this configurable
-  browser_settings.web_security = STATE_DISABLED;
-  browser_settings.universal_access_from_file_urls = STATE_ENABLED;
-  browser_settings.file_access_from_file_urls = STATE_ENABLED;
-
   // Create the first browser window with empty content to get our hands on a frame
-  auto browser = CefBrowserHost::CreateBrowserSync(window_info, handler.get(), "about:blank",
-                                                   browser_settings, NULL);
+  auto browser = handler->createBrowser("about:blank");
   auto frame = browser->GetMainFrame();
 
   // now inject user provided js file

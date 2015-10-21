@@ -9,6 +9,7 @@
 #include "include/wrapper/cef_message_router.h"
 
 #include <list>
+#include <unordered_map>
 
 class PhantomJSHandler : public CefClient,
                       public CefDisplayHandler,
@@ -25,6 +26,8 @@ class PhantomJSHandler : public CefClient,
   // Provide access to the single global instance of this object.
   static PhantomJSHandler* GetInstance();
   static CefMessageRouterConfig messageRouterConfig();
+
+  CefRefPtr<CefBrowser> createBrowser(const CefString& url);
 
   // CefClient methods:
   virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE
@@ -107,6 +110,8 @@ class PhantomJSHandler : public CefClient,
   bool is_closing_;
 
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
+  std::unordered_map<int, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingOpenBrowserRequests;
+  CefRefPtr<CefMessageRouterBrowserSide::Callback> m_callback;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);
