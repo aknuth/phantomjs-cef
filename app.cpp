@@ -3,8 +3,10 @@
 // license that can be found in the LICENSE file.
 
 #include "app.h"
+#include <QDir>
 
 #include <QFile>
+#include <QUrl>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -24,6 +26,14 @@ PhantomJSApp::PhantomJSApp()
 
 PhantomJSApp::~PhantomJSApp()
 {
+}
+
+void PhantomJSApp::OnRegisterCustomSchemes(CefRefPtr<CefSchemeRegistrar> registrar)
+{
+  // overwrite settings of the file scheme to allow extended access to it
+  // without this, the about:blank page cannot load the user provided script
+  // TODO: check whether that allso allows remote files access to local ones...
+  registrar->AddCustomScheme("file", false, true, true);
 }
 
 void PhantomJSApp::OnContextInitialized()
@@ -47,44 +57,28 @@ void PhantomJSApp::OnContextInitialized()
   CefBrowserSettings browser_settings;
   // TODO: make this configurable
   browser_settings.web_security = STATE_DISABLED;
+  browser_settings.universal_access_from_file_urls = STATE_ENABLED;
+  browser_settings.file_access_from_file_urls = STATE_ENABLED;
 
-  // Create the first browser window.
+  // Create the first browser window with empty content to get our hands on a frame
   auto browser = CefBrowserHost::CreateBrowserSync(window_info, handler.get(), "about:blank",
                                                    browser_settings, NULL);
-  if (!browser) {
-    std::cerr << "Failed to create initial browser synchronously.\n";
-    return;
-  }
-
   auto frame = browser->GetMainFrame();
 
-  // load empty html content
-  frame->LoadString("<html><head></head><body></body></html>", "file:///phantom.html");
-
-  // inject user provided js file
+  // now inject user provided js file
+  std::ostringstream content;
+  content << "<html><head>";
   auto command_line = CefCommandLine::GetGlobalCommandLine();
   if (command_line->HasArguments()) {
     CefCommandLine::ArgumentList arguments;
     command_line->GetArguments(arguments);
     for (auto argument : arguments) {
-      std::ifstream file(argument);
-      if (!file.is_open()) {
-        std::cerr << "Failed to open input file: " << argument << '\n';
-        // TODO: quit application
-        return;
-      }
-      std::string line;
-      std::string fileContents;
-      while (std::getline(file, line)) {
-        fileContents.append(line);
-        fileContents.append("\n");
-      }
-      if (fileContents.empty()) {
-        continue; // otherwise we'll assert in the execution below
-      }
-      frame->ExecuteJavaScript(fileContents, argument, 1);
+      auto url = QUrl::fromUserInput(QString::fromStdString(argument), QDir::currentPath(), QUrl::AssumeLocalFile);
+      content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\"></script>";
     }
   }
+  content << "</head><body></body></html>";
+  frame->LoadString(content.str(), "phantomjs://initialize");
 }
 
 CefRefPtr<CefPrintHandler> PhantomJSApp::GetPrintHandler()

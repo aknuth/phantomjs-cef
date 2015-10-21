@@ -27,6 +27,7 @@ class PhantomJSApp : public CefApp,
   {
     return this;
   }
+  void OnRegisterCustomSchemes(CefRefPtr<CefSchemeRegistrar> registrar) OVERRIDE;
 
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
