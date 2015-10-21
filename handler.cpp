@@ -236,12 +236,12 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   QJsonParseError error;
   const auto json = QJsonDocument::fromJson(data, &error).object();
   const auto type = json.value(QStringLiteral("type")).toString();
-//   qDebug() << data << json << error.errorString() << type;
+  qDebug() << data << json << error.errorString() << type;
   if (type == QLatin1String("openWebPage")) {
     auto subBrowser = createBrowser(json.value(QStringLiteral("url")).toString().toStdString());
     std::cerr << "sub browser created\n" << std::endl;
     // FIXME: why is this not working?!
-//     m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = callback;
+//     m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = {};
     m_callback = callback;
     return true;
   }
@@ -251,5 +251,5 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
 void PhantomJSHandler::OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                        int64 query_id)
 {
-  // TODO: remove callback
+  m_pendingOpenBrowserRequests.erase(browser->GetIdentifier());
 }
