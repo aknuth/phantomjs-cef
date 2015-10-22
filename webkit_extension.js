@@ -25,7 +25,7 @@ if (!phantom)
     };
   };
   phantom.require = function(file) {
-    if (file == "webpage") {
+    if (file === "webpage") {
       return { create: function() { return new phantom.WebPage; } };
     }
     native function require();
@@ -34,5 +34,21 @@ if (!phantom)
   phantom.exit = function() {
     native function exit();
     exit();
+  };
+  // can be overwritten by the user
+  phantom.onError = null;
+  // this is set to window.onerror by default
+  phantom.propagateOnError = function(errorMessage, url, lineNumber, columnNumber, error) {
+    if (typeof phantom.onError === "function") {
+      // keep compatibility with old phantomjs onError handler
+      phantom.onError(errorMessage, error.stack, url, lineNumber, columnNumber, error);
+    } else {
+      native function printError();
+      if (error.stack) {
+        printError("" + error.stack);
+      } else {
+        printError(errorMessage + " at " + url + ":" + lineNumber + ":" + columnNumber);
+      }
+    }
   };
 })();

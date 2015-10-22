@@ -94,7 +94,7 @@ void PhantomJSHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
 
 bool PhantomJSHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
 {
-  std::cerr << "Console message from " << source << ':' << line << ": " << message << '\n';
+  std::cerr << source << ':' << line << ": " << message << '\n';
   return true;
 }
 

@@ -51,6 +51,7 @@ void PhantomJSApp::OnContextInitialized()
   // now inject user provided js file
   std::ostringstream content;
   content << "<html><head>";
+  content << "<script type\"text/javascript\">window.onerror = phantom.propagateOnError;</script>\n";
   auto command_line = CefCommandLine::GetGlobalCommandLine();
   if (command_line->HasArguments()) {
     CefCommandLine::ArgumentList arguments;
@@ -80,6 +81,9 @@ public:
   {
     if (name == "exit") {
       CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, CefProcessMessage::Create("exit"));
+      return true;
+    } else if (name == "printError" && !arguments.empty()) {
+      std::cerr << arguments.at(0)->GetStringValue() << '\n';
       return true;
     }
     exception = std::string("Unknown PhantomJS function: ") + name.ToString();
