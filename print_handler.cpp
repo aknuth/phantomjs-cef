@@ -38,3 +38,10 @@ void PrintHandler::OnPrintSettings(CefRefPtr<CefPrintSettings> settings, bool ge
 {
     std::cerr << __FUNCTION__ << get_defaults << "\n";
 }
+
+#if CEF_COMMIT_NUMBER > 1332 // TODO: find correct commit number that adds this
+void PrintHandler::OnPrintStart(CefRefPtr<CefBrowser> browser)
+{
+    std::cerr << __FUNCTION__ << "\n";
+}
+#endif

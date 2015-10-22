@@ -7,6 +7,8 @@
 
 #include "include/cef_print_handler.h"
 
+#include "include/cef_version.h"
+
 class PdfPrintCallback : public CefPdfPrintCallback
 {
 public:
@@ -29,6 +31,9 @@ class PrintHandler : public CefPrintHandler
                           CefRefPtr<CefPrintJobCallback> callback) override;
   virtual void OnPrintReset() override;
   virtual void OnPrintSettings(CefRefPtr<CefPrintSettings> settings, bool get_defaults) override;
+#if CEF_COMMIT_NUMBER > 1332 // TODO: find correct commit number that adds this
+  virtual void OnPrintStart(CefRefPtr<CefBrowser> browser) override;
+#endif
 
  private:
   // Include the default reference counting implementation.
