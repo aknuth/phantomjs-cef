@@ -45,7 +45,7 @@ if (!phantom)
     } else {
       native function printError();
       if (error.stack) {
-        printError("" + error.stack);
+        printError(String(error.stack));
       } else {
         printError(errorMessage + " at " + url + ":" + lineNumber + ":" + columnNumber);
       }
