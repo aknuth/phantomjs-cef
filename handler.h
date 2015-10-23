@@ -9,7 +9,7 @@
 #include "include/wrapper/cef_message_router.h"
 
 #include <vector>
-#include <unordered_map>
+#include <QHash>
 
 class PhantomJSHandler : public CefClient,
                       public CefDisplayHandler,
@@ -107,8 +107,8 @@ class PhantomJSHandler : public CefClient,
   bool m_isClosing;
 
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
-  std::unordered_map<int, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingOpenBrowserRequests;
-  CefRefPtr<CefMessageRouterBrowserSide::Callback> m_callback;
+  // NOTE: using QHash prevents a strange ABI issue discussed here: http://www.magpcss.org/ceforum/viewtopic.php?f=6&t=13543
+  QHash<int, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingOpenBrowserRequests;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);

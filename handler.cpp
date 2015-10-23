@@ -143,13 +143,10 @@ void PhantomJSHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
   CEF_REQUIRE_UI_THREAD();
 
   // notify about load error
-  if (m_callback) {
-    m_callback->Failure(errorCode, errorText);
-  }
-  if (false) { // FIXME: why is this not working?!
+  {
     auto it = m_pendingOpenBrowserRequests.find(browser->GetIdentifier());
     if (it != m_pendingOpenBrowserRequests.end()) {
-      it->second->Failure(errorCode, errorText);
+      it.value()->Failure(errorCode, errorText);
       m_pendingOpenBrowserRequests.erase(it);
     }
   }
@@ -174,15 +171,10 @@ void PhantomJSHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool 
   std::cerr << "load state change: " << isLoading << canGoBack << canGoForward << ", url = " << browser->GetMainFrame()->GetURL() << "\n";
 
   if (!isLoading) { // notify about load success
-    if (m_callback) {
-      m_callback->Success(std::to_string(browser->GetIdentifier()));
-    }
-    if (false) { // FIXME: why is this not working?!
-      auto it = m_pendingOpenBrowserRequests.find(browser->GetIdentifier());
-      if (it != m_pendingOpenBrowserRequests.end()) {
-        it->second->Success(std::to_string(browser->GetIdentifier()));
-        m_pendingOpenBrowserRequests.erase(it);
-      }
+    auto it = m_pendingOpenBrowserRequests.find(browser->GetIdentifier());
+    if (it != m_pendingOpenBrowserRequests.end()) {
+      it.value()->Success(std::to_string(browser->GetIdentifier()));
+      m_pendingOpenBrowserRequests.erase(it);
     }
   }
 }
@@ -236,13 +228,9 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   QJsonParseError error;
   const auto json = QJsonDocument::fromJson(data, &error).object();
   const auto type = json.value(QStringLiteral("type")).toString();
-  qDebug() << data << json << error.errorString() << type;
   if (type == QLatin1String("openWebPage")) {
     auto subBrowser = createBrowser(json.value(QStringLiteral("url")).toString().toStdString());
-    std::cerr << "sub browser created\n" << std::endl;
-    // FIXME: why is this not working?!
-//     m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = {};
-    m_callback = callback;
+    m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = callback;
     return true;
   }
   return false;
@@ -251,5 +239,5 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
 void PhantomJSHandler::OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                        int64 query_id)
 {
-  m_pendingOpenBrowserRequests.erase(browser->GetIdentifier());
+  m_pendingOpenBrowserRequests.remove(browser->GetIdentifier());
 }
