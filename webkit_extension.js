@@ -98,12 +98,15 @@ if (!phantom)
       retval = func();
     } catch(e) {
       exception = e;
+      if (e.stack) {
+        exception = e.stack;
+      }
     }
     startPhantomJsQuery({
       request: JSON.stringify({
         type: 'returnEvaluateJavaScript',
         retval: JSON.stringify(retval),
-        exception: exception ? JSON.stringify(exception) : "",
+        exception: exception ? String(exception) : "",
         queryId: queryId
       }),
       persistent: false,

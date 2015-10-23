@@ -9,6 +9,9 @@ page.open(url, function (status) {
   }, function(retval) {
     console.log("retval: " + retval);
     phantom.exit();
+  }, function(errorCode, errorMessage) {
+    console.log("execution failed :( code = " + errorCode + ", message = " + errorMessage);
+    phantom.exit();
   }));
 });
 console.log("exiting?");
