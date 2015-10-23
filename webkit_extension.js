@@ -16,10 +16,21 @@ if (!phantom)
           callback("success");
         },
         onFailure: function(errorCode, errorMessage) {
-          callback("error");
+          callback("fail");
         }
       });
     };
+    this.close = function() {
+      startPhantomJsQuery({
+        request: JSON.stringify({
+          type: 'closeWebPage',
+          browser: webpage.id
+        }),
+        persistent: false,
+        onSuccess: function() {},
+        onFailure: function() {}
+      });
+    }
     this.evaluate = function(script, callback, errorCallback) {
       webpage.evaluateJavaScript(String(script), callback, errorCallback);
     };

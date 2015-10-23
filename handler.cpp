@@ -234,6 +234,16 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     auto subBrowser = createBrowser(json.value(QStringLiteral("url")).toString().toStdString());
     m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = callback;
     return true;
+  } else if (type == QLatin1String("closeWebPage")) {
+    const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
+    auto subBrowser = m_browsers.value(subBrowserId);
+    if (subBrowser) {
+      subBrowser->GetHost()->CloseBrowser(true);
+      callback->Success({});
+      return true;
+    } else {
+      qWarning() << "Cannot close unknown browser with id" << subBrowser;
+    }
   } else if (type == QLatin1String("evaluateJavaScript")) {
     const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
     auto script = json.value(QStringLiteral("script")).toString();
