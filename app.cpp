@@ -3,10 +3,12 @@
 // license that can be found in the LICENSE file.
 
 #include "app.h"
-#include <QDir>
 
+#include <QDir>
 #include <QFile>
 #include <QUrl>
+#include <QDebug>
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -125,8 +127,8 @@ void PhantomJSApp::OnContextReleased(CefRefPtr<CefBrowser> browser, CefRefPtr<Ce
   m_messageRouter->OnContextReleased(browser, frame, context);
 }
 
-bool PhantomJSApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
+bool PhantomJSApp::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
+                                            CefRefPtr<CefProcessMessage> message)
 {
-  std::cerr << "app got message: " << message->GetName() << '\n';
   return m_messageRouter->OnProcessMessageReceived(browser, source_process, message);
 }

@@ -101,14 +101,14 @@ class PhantomJSHandler : public CefClient,
 
  private:
   // List of existing browser windows. Only accessed on the CEF UI thread.
-  typedef std::vector<CefRefPtr<CefBrowser>> BrowserList;
-  BrowserList m_browsers;
+  QHash<int, CefRefPtr<CefBrowser>> m_browsers;
 
   bool m_isClosing;
 
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
   // NOTE: using QHash prevents a strange ABI issue discussed here: http://www.magpcss.org/ceforum/viewtopic.php?f=6&t=13543
-  QHash<int, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingOpenBrowserRequests;
+  QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingOpenBrowserRequests;
+  QHash<int64, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingQueryCallbacks;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);

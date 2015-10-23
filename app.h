@@ -42,6 +42,7 @@ class PhantomJSApp : public CefApp,
                          CefRefPtr<CefV8Context> context) override;
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process,
                                 CefRefPtr<CefProcessMessage> message) override;
+
  private:
   CefRefPtr<PrintHandler> m_printHandler;
   CefRefPtr<CefMessageRouterRendererSide> m_messageRouter;

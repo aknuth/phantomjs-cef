@@ -72,7 +72,6 @@ bool PhantomJSHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
                                                 CefProcessId source_process,
                                                 CefRefPtr<CefProcessMessage> message)
 {
-  std::cerr << "handler got message: " << message->GetName() << '\n';
   if (m_messageRouter->OnProcessMessageReceived(browser, source_process, message)) {
     return true;
   }
@@ -87,9 +86,10 @@ void PhantomJSHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
                                   const CefString& title)
 {
   CEF_REQUIRE_UI_THREAD();
-  std::string titleStr(title);
+  // TODO: send a signal via persistent callback?
+//   std::string titleStr(title);
 
-  std::cerr << "title changed to: " << title << '\n';
+//   std::cerr << "title changed to: " << title << '\n';
 }
 
 bool PhantomJSHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
@@ -102,9 +102,7 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
 
-  std::cerr << "browser created\n";
-  // Add to the list of existing browsers.
-  m_browsers.push_back(browser);
+  m_browsers[browser->GetIdentifier()] = browser;
 }
 
 bool PhantomJSHandler::DoClose(CefRefPtr<CefBrowser> browser)
@@ -122,11 +120,7 @@ void PhantomJSHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 
   m_messageRouter->OnBeforeClose(browser);
 
-  // Remove from the list of existing browsers.
-  auto it = remove_if(m_browsers.begin(), m_browsers.end(), [browser] (const CefRefPtr<CefBrowser>& other) {
-    return other->IsSame(browser);
-  });
-  m_browsers.erase(it, m_browsers.end());
+  m_browsers.remove(browser->GetIdentifier());
 
   if (m_browsers.empty()) {
     // All browser windows have closed. Quit the application message loop.
@@ -214,7 +208,7 @@ void PhantomJSHandler::CloseAllBrowsers(bool force_close)
     return;
   }
 
-  for (auto browser: m_browsers) {
+  foreach (const auto& browser, m_browsers) {
     browser->GetHost()->CloseBrowser(force_close);
   }
   LOG_ASSERT(m_browsers.empty());
@@ -224,14 +218,50 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
                                int64 query_id, const CefString& request, bool persistent,
                                CefRefPtr<Callback> callback)
 {
+  CEF_REQUIRE_UI_THREAD();
+
   const auto data = QByteArray::fromStdString(request.ToString());
+
   QJsonParseError error;
   const auto json = QJsonDocument::fromJson(data, &error).object();
+  if (error.error) {
+    qWarning() << error.errorString();
+    return false;
+  }
+
   const auto type = json.value(QStringLiteral("type")).toString();
   if (type == QLatin1String("openWebPage")) {
     auto subBrowser = createBrowser(json.value(QStringLiteral("url")).toString().toStdString());
     m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = callback;
     return true;
+  } else if (type == QLatin1String("evaluateJavaScript")) {
+    const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
+    auto script = json.value(QStringLiteral("script")).toString();
+    auto subBrowser = m_browsers.value(subBrowserId);
+    if (subBrowser) {
+      m_pendingQueryCallbacks[query_id] = callback;
+      script = "phantom.handleEvaluateJavaScript(" + script + ", " + QString::number(query_id) + ")";
+      subBrowser->GetMainFrame()->ExecuteJavaScript(script.toStdString(), "phantomjs://evaluateJavaScript", 1);
+    } else {
+      callback->Failure(1, "unknown browser id");
+    }
+    return true;
+  } else if (type == QLatin1String("returnEvaluateJavaScript")) {
+    auto otherQueryId = json.value(QStringLiteral("queryId")).toInt(-1);
+    auto it = m_pendingQueryCallbacks.find(otherQueryId);
+    if (it != m_pendingQueryCallbacks.end()) {
+      auto retval = json.value(QStringLiteral("retval")).toString();
+      auto exception = json.value(QStringLiteral("exception")).toString();
+      auto otherCallback = it.value();
+      if (exception.isEmpty()) {
+        otherCallback->Success(retval.toStdString());
+      } else {
+        otherCallback->Failure(1, exception.toStdString());
+      }
+      m_pendingQueryCallbacks.erase(it);
+      callback->Success({});
+      return true;
+    }
   }
   return false;
 }
@@ -240,4 +270,5 @@ void PhantomJSHandler::OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<
                                        int64 query_id)
 {
   m_pendingOpenBrowserRequests.remove(browser->GetIdentifier());
+  m_pendingQueryCallbacks.remove(query_id);
 }
