@@ -1,27 +1,62 @@
 var phantom;
+
 if (!phantom)
   phantom = {};
+
 (function() {
+  function wrapPhantomQuery(request) {
+    return new Promise(function(resolve, reject) {
+      startPhantomJsQuery({
+        request: JSON.stringify(request),
+        persistent: false,
+        onSuccess: resolve,
+        onFailure: reject
+      });
+    });
+  }
+
+  function setupWebPageSignals(webpage) {
+    startPhantomJsQuery({
+      request: JSON.stringify({
+        type: 'webPageSignals',
+        browser: webpage.id
+      }),
+      persistent: true,
+      onSuccess: function(response) {
+        var response = JSON.parse(response);
+        webpage[response.signal].apply(webpage, response.args);
+      },
+      onFailure: function() {}
+    });
+  }
+
   phantom.WebPage = function() {
     var webpage = this;
+    var createBrowser = wrapPhantomQuery({type: "createBrowser"})
+      .then(function(response) {
+        webpage.id = parseInt(response);
+        setupWebPageSignals(webpage);
+      });
+
+    this.onLoadStarted = function() {};
+    this.onLoadFinished = function(status) {};
     this.open = function(url, callback) {
-      startPhantomJsQuery({
-        request: JSON.stringify({
-          type: 'openWebPage',
-          url: url,
-          browser: webpage.id
-        }),
-        persistent: false,
-        onSuccess: function(response) {
-          webpage.id = parseInt(response);
+      createBrowser.then(function() {
+        return wrapPhantomQuery({type: "openWebPage", url: url, browser: webpage.id})
+      }).then(function() {
+        if (typeof(callback) === "function") {
           callback("success");
-        },
-        onFailure: function(errorCode, errorMessage) {
+        }
+      }, function() {
+        if (typeof(callback) === "function") {
           callback("fail");
         }
       });
     };
     this.close = function() {
+      if (webpage.id === null) {
+        return;
+      }
       startPhantomJsQuery({
         request: JSON.stringify({
           type: 'closeWebPage',
@@ -31,6 +66,7 @@ if (!phantom)
         onSuccess: function() {},
         onFailure: function() {}
       });
+      webpage.id = null;
     }
     this.evaluate = function(script, callback, errorCallback) {
       webpage.evaluateJavaScript(String(script), callback, errorCallback);

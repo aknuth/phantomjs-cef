@@ -3,6 +3,7 @@ var page = require('webpage').create();
 var url = 'http://phantomjs.org';
 page.open(url, function (status) {
   if (status === "fail") {
+    console.log("FAIL!");
     phantom.exit();
   }
   console.log("status callback: " + status);

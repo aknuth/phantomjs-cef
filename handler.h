@@ -106,6 +106,7 @@ class PhantomJSHandler : public CefClient,
   // NOTE: using QHash prevents a strange ABI issue discussed here: http://www.magpcss.org/ceforum/viewtopic.php?f=6&t=13543
   QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingOpenBrowserRequests;
   QHash<int64, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingQueryCallbacks;
+  QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_browserSignals;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);

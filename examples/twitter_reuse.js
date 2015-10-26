@@ -11,6 +11,14 @@ var users = ['PhantomJS',
 
 var page = require('webpage').create();
 
+page.onLoadFinished = function(status) {
+  console.log("load finished: " + status);
+};
+
+page.onLoadStarted = function() {
+  console.log("load started");
+}
+
 function follow(user, callback) {
     page.open('http://mobile.twitter.com/' + user, function (status) {
         if (status === 'fail') {
