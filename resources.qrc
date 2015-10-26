@@ -1,5 +1,6 @@
 <RCC>
-  <qresource prefix="/">
-    <file>webkit_extension.js</file>
+  <qresource prefix="/phantomjs">
+    <file>modules/00-phantom.js</file>
+    <file>modules/01-webpage.js</file>
   </qresource>
 </RCC>

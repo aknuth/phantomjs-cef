@@ -98,9 +98,13 @@ private:
 
 void PhantomJSApp::OnWebKitInitialized()
 {
-  QFile file(":/webkit_extension.js");
-  file.open(QIODevice::ReadOnly | QIODevice::Text);
-  std::string extensionCode = file.readAll().toStdString();
+  std::string extensionCode;
+
+  foreach (const auto& module, QDir(":/phantomjs/modules").entryInfoList(QDir::NoFilter, QDir::Name)) {
+    QFile file(module.absoluteFilePath());
+    file.open(QIODevice::ReadOnly | QIODevice::Text);
+    extensionCode += file.readAll().toStdString();
+  }
 
   // Create an instance of my CefV8Handler object.
   CefRefPtr<CefV8Handler> handler = new V8Handler();
