@@ -139,6 +139,7 @@ void PhantomJSHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
 {
   CEF_REQUIRE_UI_THREAD();
 
+  qWarning() << browser->GetIdentifier() << errorCode << errorText << failedUrl;
   // Don't display an error for downloaded files.
   if (errorCode == ERR_ABORTED)
     return;

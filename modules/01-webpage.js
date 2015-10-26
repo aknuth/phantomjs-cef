@@ -43,6 +43,7 @@
 
   phantom.WebPage = function() {
     var webpage = this;
+    this.id = null;
     var createBrowser = phantom.query({type: "createBrowser"})
       .then(function(response) {
         webpage.id = parseInt(response);
@@ -52,7 +53,7 @@
     this.onLoadStarted = function() {};
     this.onLoadFinished = function(status) {};
     this.open = function(url, callback) {
-      createBrowser.then(function() {
+      return createBrowser.then(function() {
         return phantom.query({type: "openWebPage", url: url, browser: webpage.id})
       }).then(function() {
         if (typeof(callback) === "function") {
@@ -79,14 +80,10 @@
       });
       webpage.id = null;
     }
-    this.evaluate = function(script, callback, errorCallback) {
-      webpage.evaluateJavaScript(String(script), callback, errorCallback);
+    this.evaluate = function(script, successCallback, errorCallback) {
+      return webpage.evaluateJavaScript(String(script), successCallback, errorCallback);
     };
-    this.evaluateJavaScript = function(script, callback, errorCallback) {
-      if (webpage.id === null) {
-        console.log("Cannot evaluate JavaScript code before WebPage has opened.");
-        return;
-      }
+    this.evaluateJavaScript = function(script, successCallback, errorCallback) {
       /*
        * this is pretty convoluted due to the multi-process architecture
        *
@@ -98,27 +95,11 @@
        *
        * i.e.: four IPC hops for a single evaluateJavaScript call :(
        */
-      startPhantomJsQuery({
-        request: JSON.stringify({
+      return phantom.query({
           type: 'evaluateJavaScript',
           script: script,
           browser: webpage.id
-        }),
-        persistent: false,
-        onSuccess: function(response) {
-          if (typeof(callback) === "function") {
-            callback(response);
-          }
-        },
-        onFailure: function(errorCode, errorMessage) {
-          if (typeof(errorCallback) === "function") {
-            errorCallback(errorCode, errorMessage);
-          } else {
-            console.log("evaluateJavaScript failure: " + errorCode + ": " + errorMessage);
-          }
-        }
-      });
+      }).then(successCallback, errorCallback);
     };
-    this.id = null;
   };
 })();

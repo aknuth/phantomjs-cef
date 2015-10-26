@@ -37,7 +37,9 @@ if (!phantom)
         request: JSON.stringify(request),
         persistent: false,
         onSuccess: resolve,
-        onFailure: reject
+        onFailure: function(errorCode, errorMessage) {
+          reject(errorMessage, errorCode);
+        }
       });
     });
   }
