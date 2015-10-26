@@ -8,7 +8,8 @@ if (!phantom)
       startPhantomJsQuery({
         request: JSON.stringify({
           type: 'openWebPage',
-          url: url
+          url: url,
+          browser: webpage.id
         }),
         persistent: false,
         onSuccess: function(response) {

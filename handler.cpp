@@ -226,8 +226,24 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   }
 
   const auto type = json.value(QStringLiteral("type")).toString();
+
   if (type == QLatin1String("openWebPage")) {
-    auto subBrowser = createBrowser(json.value(QStringLiteral("url")).toString().toStdString());
+    const auto url = json.value(QStringLiteral("url")).toString().toStdString();
+    const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
+    CefRefPtr<CefBrowser> subBrowser;
+    if (subBrowserId == -1) {
+      // first open request on a new web page creates a new browser instance
+      subBrowser = createBrowser(url);
+    } else {
+      // otherwise reuse the existing browser instance
+      subBrowser =  m_browsers.value(subBrowserId);
+      if (!subBrowser) {
+        qWarning() << "Cannot open web page in browser with unknown id" << subBrowserId;
+        return false;
+      }
+      subBrowser->GetMainFrame()->LoadURL(url);
+    }
+
     m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = callback;
     return true;
   } else if (type == QLatin1String("closeWebPage")) {
