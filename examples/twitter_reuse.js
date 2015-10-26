@@ -1,0 +1,40 @@
+// List following and followers from several accounts
+
+var users = ['PhantomJS',
+        'ariyahidayat',
+        'detronizator',
+        'KDABQt',
+        'lfranchi',
+        'jonleighton',
+        '_jamesmgreene',
+        'Vitalliumm'];
+
+var page = require('webpage').create();
+
+function follow(user, callback) {
+    page.open('http://mobile.twitter.com/' + user, function (status) {
+        if (status === 'fail') {
+            console.log(user + ': ?');
+        } else {
+            page.evaluate(function () {
+                return document.querySelector('.UserProfileHeader-statCount').innerText;
+            }, function(data) {
+              console.log(user + ': ' + data);
+              callback.apply();
+            });
+        }
+    });
+}
+
+function process() {
+    if (users.length > 0) {
+        var user = users[0];
+        users.splice(0, 1);
+        follow(user, process);
+    } else {
+        phantom.exit();
+    }
+}
+
+process();
+

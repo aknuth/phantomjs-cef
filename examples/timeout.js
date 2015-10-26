@@ -1,0 +1,1 @@
+setTimeout(function() { console.log("timeout!"); phantom.exit(); }, 1000);
