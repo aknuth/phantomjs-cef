@@ -9,17 +9,30 @@
 
 #include "include/cef_version.h"
 
+template<typename Handler>
 class PdfPrintCallback : public CefPdfPrintCallback
 {
 public:
-  // CefPdfPrintCallback methods:
-  // TODO: move this out of the handler?
-  virtual void OnPdfPrintFinished(const CefString& path, bool ok) override;
+  PdfPrintCallback(Handler handler)
+    : m_handler(handler)
+  {}
+
+  void OnPdfPrintFinished(const CefString& path, bool ok) override
+  {
+    m_handler(path, ok);
+  }
 
 private:
+  Handler m_handler;
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PdfPrintCallback);
 };
+
+template<typename Handler>
+CefRefPtr<PdfPrintCallback<Handler>> makePdfPrintCallback(Handler handler)
+{
+  return new PdfPrintCallback<Handler>(handler);
+}
 
 class PrintHandler : public CefPrintHandler
 {

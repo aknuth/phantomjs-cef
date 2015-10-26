@@ -6,11 +6,6 @@
 
 #include <iostream>
 
-void PdfPrintCallback::OnPdfPrintFinished(const CefString& path, bool ok)
-{
-    std::cerr << "printing finished " << path << '\t' << ok << "\n";
-}
-
 CefSize PrintHandler::GetPdfPaperSize(int device_units_per_inch)
 {
     std::cerr << "size queried" << device_units_per_inch << "\n";

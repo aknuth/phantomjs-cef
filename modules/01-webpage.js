@@ -101,5 +101,12 @@
           browser: webpage.id
       }).then(successCallback, errorCallback);
     };
+    this.render = function(path) {
+      return phantom.query({
+        type: 'renderPage',
+        path: path,
+        browser: webpage.id
+      });
+    }
   };
 })();

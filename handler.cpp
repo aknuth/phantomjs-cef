@@ -263,39 +263,9 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     auto subBrowser = createBrowser("about:blank");
     callback->Success(std::to_string(subBrowser->GetIdentifier()));
     return true;
-  } if (type == QLatin1String("openWebPage")) {
-    const auto url = json.value(QStringLiteral("url")).toString().toStdString();
+  } else if (type == QLatin1String("webPageSignals")) {
     const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
-    CefRefPtr<CefBrowser> subBrowser = m_browsers.value(subBrowserId);
-    if (!subBrowser) {
-      qWarning() << "Cannot open web page in browser with unknown id" << subBrowserId;
-      return false;
-    }
-    subBrowser->GetMainFrame()->LoadURL(url);
-
-    m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = callback;
-    return true;
-  } else if (type == QLatin1String("closeWebPage")) {
-    const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
-    auto subBrowser = m_browsers.value(subBrowserId);
-    if (subBrowser) {
-      subBrowser->GetHost()->CloseBrowser(true);
-      callback->Success({});
-      return true;
-    } else {
-      qWarning() << "Cannot close unknown browser with id" << subBrowser;
-    }
-  } else if (type == QLatin1String("evaluateJavaScript")) {
-    const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
-    auto script = json.value(QStringLiteral("script")).toString();
-    auto subBrowser = m_browsers.value(subBrowserId);
-    if (subBrowser) {
-      m_pendingQueryCallbacks[query_id] = callback;
-      script = "phantom.handleEvaluateJavaScript(" + script + ", " + QString::number(query_id) + ")";
-      subBrowser->GetMainFrame()->ExecuteJavaScript(script.toStdString(), "phantomjs://evaluateJavaScript", 1);
-    } else {
-      callback->Failure(1, "unknown browser id");
-    }
+    m_browserSignals[subBrowserId] = callback;
     return true;
   } else if (type == QLatin1String("returnEvaluateJavaScript")) {
     auto otherQueryId = json.value(QStringLiteral("queryId")).toInt(-1);
@@ -313,9 +283,40 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
       callback->Success({});
       return true;
     }
-  } else if (type == QLatin1String("webPageSignals")) {
-    const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
-    m_browserSignals[subBrowserId] = callback;
+  }
+
+  const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
+  CefRefPtr<CefBrowser> subBrowser = m_browsers.value(subBrowserId);
+  if (!subBrowser) {
+    qWarning() << "Cannot close unknown browser with id" << subBrowserId;
+    return false;
+  }
+
+  // below, all queries work on a browser
+  if (type == QLatin1String("openWebPage")) {
+    const auto url = json.value(QStringLiteral("url")).toString().toStdString();
+    subBrowser->GetMainFrame()->LoadURL(url);
+    m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = callback;
+    return true;
+  } else if (type == QLatin1String("closeWebPage")) {
+    subBrowser->GetHost()->CloseBrowser(true);
+    callback->Success({});
+    return true;
+  } else if (type == QLatin1String("evaluateJavaScript")) {
+    auto script = json.value(QStringLiteral("script")).toString();
+    m_pendingQueryCallbacks[query_id] = callback;
+    script = "phantom.handleEvaluateJavaScript(" + script + ", " + QString::number(query_id) + ")";
+    subBrowser->GetMainFrame()->ExecuteJavaScript(script.toStdString(), "phantomjs://evaluateJavaScript", 1);
+    return true;
+  } else if (type == QLatin1String("renderPage")) {
+    const auto path = json.value(QStringLiteral("path")).toString().toStdString();
+    subBrowser->GetHost()->PrintToPDF(path, {}, makePdfPrintCallback([callback] (const CefString& path, bool success) {
+      if (success) {
+        callback->Success(path);
+      } else {
+        callback->Failure(1, std::string("failed to print to path ") + path.ToString());
+      }
+    }));
     return true;
   }
   return false;
