@@ -2,6 +2,9 @@ console.log('Loading a web page');
 var page = require('webpage').create();
 var url = 'http://phantomjs.org';
 page.open(url, function (status) {
+  if (status === "fail") {
+    phantom.exit();
+  }
   console.log("status callback: " + status);
   console.log("eval ret val:" + page.evaluate(function() {
     console.log("window.location.hostname = " + window.location.hostname);

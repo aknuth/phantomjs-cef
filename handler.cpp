@@ -134,15 +134,6 @@ void PhantomJSHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
 {
   CEF_REQUIRE_UI_THREAD();
 
-  // notify about load error
-  {
-    auto it = m_pendingOpenBrowserRequests.find(browser->GetIdentifier());
-    if (it != m_pendingOpenBrowserRequests.end()) {
-      it.value()->Failure(errorCode, errorText);
-      m_pendingOpenBrowserRequests.erase(it);
-    }
-  }
-
   // Don't display an error for downloaded files.
   if (errorCode == ERR_ABORTED)
     return;
@@ -156,18 +147,25 @@ void PhantomJSHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
   frame->LoadString(ss.str(), failedUrl);
 }
 
-void PhantomJSHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward)
+void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame)
+{
+  std::cerr << "load started " << frame->GetURL() << '\n';
+}
+
+void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode)
 {
   CEF_REQUIRE_UI_THREAD();
 
-  std::cerr << "load state change: " << isLoading << canGoBack << canGoForward << ", url = " << browser->GetMainFrame()->GetURL() << "\n";
+  std::cerr << "load end " << frame->GetURL() << ", status = " << httpStatusCode << '\n';
 
-  if (!isLoading) { // notify about load success
-    auto it = m_pendingOpenBrowserRequests.find(browser->GetIdentifier());
-    if (it != m_pendingOpenBrowserRequests.end()) {
+  auto it = m_pendingOpenBrowserRequests.find(browser->GetIdentifier());
+  if (it != m_pendingOpenBrowserRequests.end()) {
+    if (httpStatusCode >= 400) {
+      it.value()->Failure(httpStatusCode, "load error");
+    } else {
       it.value()->Success(std::to_string(browser->GetIdentifier()));
-      m_pendingOpenBrowserRequests.erase(it);
     }
+    m_pendingOpenBrowserRequests.erase(it);
   }
 }
 
@@ -277,6 +275,8 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
 void PhantomJSHandler::OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                        int64 query_id)
 {
+  CEF_REQUIRE_UI_THREAD();
+
   m_pendingOpenBrowserRequests.remove(browser->GetIdentifier());
   m_pendingQueryCallbacks.remove(query_id);
 }
