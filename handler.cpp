@@ -7,7 +7,6 @@
 #include <sstream>
 #include <string>
 #include <iostream>
-#include <codecvt>
 #include <locale>
 #include <algorithm>
 
@@ -24,8 +23,7 @@
 
 std::ostream& operator<<(std::ostream& stream, const wchar_t *input)
 {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> utf8_conv;
-    return stream << utf8_conv.to_bytes(input);
+    return stream << qPrintable(QString::fromWCharArray(input));
 }
 
 PhantomJSHandler::PhantomJSHandler()
