@@ -14,6 +14,7 @@ set(PHANTOMJS_SRCS
   handler.cpp
   print_handler.cpp
   main.cpp
+  debug.cpp
 )
 
 qt5_add_resources(PHANTOMJS_SRCS resources.qrc)

@@ -12,7 +12,6 @@
 
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QDebug>
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
@@ -20,16 +19,7 @@
 #include "include/wrapper/cef_helpers.h"
 
 #include "print_handler.h"
-
-std::ostream& operator<<(std::ostream& stream, const wchar_t *input)
-{
-    return stream << qPrintable(QString::fromWCharArray(input));
-}
-
-QDebug operator<<(QDebug stream, const CefString& string)
-{
-  return stream << QString::fromStdString(string.ToString());
-}
+#include "debug.h"
 
 namespace {
 CefRefPtr<CefMessageRouterBrowserSide::Callback> takeCallback(QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>>* callbacks,
@@ -180,7 +170,7 @@ void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
     return;
   }
 
-  qDebug() << browser->GetIdentifier() << frame->GetURL();
+  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL();
 
   auto callback = m_browserSignals.value(browser->GetIdentifier());
   if (!callback) {
@@ -198,7 +188,7 @@ void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFra
     return;
   }
 
-  qDebug() << browser->GetIdentifier() << frame->GetURL() << httpStatusCode;
+  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << httpStatusCode;
 
   /// TODO: is this OK?
   const bool success = httpStatusCode < 400;

@@ -4,39 +4,39 @@
 
 #include "print_handler.h"
 
-#include <iostream>
+#include "debug.h"
 
 CefSize PrintHandler::GetPdfPaperSize(int device_units_per_inch)
 {
-    std::cerr << "size queried" << device_units_per_inch << "\n";
-    return CefSize(8.5 * device_units_per_inch, 11.0 * device_units_per_inch);
+  qCDebug(print) << "size queried" << device_units_per_inch;
+  return CefSize(8.5 * device_units_per_inch, 11.0 * device_units_per_inch);
 }
 
 bool PrintHandler::OnPrintDialog(bool has_selection, CefRefPtr<CefPrintDialogCallback> callback)
 {
-    std::cerr << __FUNCTION__ << has_selection << "\n";
-    return false;
+  qCDebug(print) << has_selection;
+  return false;
 }
 
 bool PrintHandler::OnPrintJob(const CefString& document_name, const CefString& pdf_file_path, CefRefPtr<CefPrintJobCallback> callback)
 {
-    std::cerr << __FUNCTION__ << document_name << "\t" << pdf_file_path << "\n";
-    return false;
+  qCDebug(print) << document_name << pdf_file_path;
+  return false;
 }
 
 void PrintHandler::OnPrintReset()
 {
-    std::cerr << __FUNCTION__ << "\n";
+  qCDebug(print) << "!";
 }
 
 void PrintHandler::OnPrintSettings(CefRefPtr<CefPrintSettings> settings, bool get_defaults)
 {
-    std::cerr << __FUNCTION__ << get_defaults << "\n";
+  qCDebug(print) << get_defaults;
 }
 
 #if CEF_COMMIT_NUMBER > 1332 // TODO: find correct commit number that adds this
 void PrintHandler::OnPrintStart(CefRefPtr<CefBrowser> browser)
 {
-    std::cerr << __FUNCTION__ << "\n";
+  qCDebug(print) << "!";
 }
 #endif

@@ -7,7 +7,6 @@
 #include <QDir>
 #include <QFile>
 #include <QUrl>
-#include <QDebug>
 
 #include <string>
 #include <iostream>
@@ -15,6 +14,7 @@
 
 #include "handler.h"
 #include "print_handler.h"
+#include "debug.h"
 
 #include "include/cef_browser.h"
 #include "include/cef_command_line.h"
@@ -74,7 +74,6 @@ void PhantomJSApp::OnContextInitialized()
 
 CefRefPtr<CefPrintHandler> PhantomJSApp::GetPrintHandler()
 {
-  std::cerr << "print handler accessed\n";
   return m_printHandler;
 }
 
