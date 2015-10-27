@@ -59,14 +59,20 @@ void PhantomJSApp::OnContextInitialized()
   // which are otherwise not available on the renderer process
   std::ostringstream content;
   content << "<html><head>\n";
-  content << "<script type\"text/javascript\">window.onerror = phantom.internal.propagateOnError;\n";
+  content << "<script type\"text/javascript\">\n";
+  // forward extension code into global namespace
+  content << "window.onerror = phantom.internal.propagateOnError;\n";
+  content << "window.require = phantom.require;\n";
+  // send arguments to script
   content << "phantom.args = [";
   for (const auto& arg : arguments) {
     content << '\"' << arg << "\",";
   }
   content << "];\n";
-  content << "</script>\n";
-  content << "<script type=\"text/javascript\">phantom.libraryPath = \"" << qPrintable(QFileInfo(url.toLocalFile()).absolutePath()) << "\";</script>\n";
+  // default initialize the library path to the folder of the script that will be executed
+  content << "phantom.libraryPath = \"" << qPrintable(QFileInfo(url.toLocalFile()).absolutePath()) << "\";\n";
+  content <<"</script>\n";
+  // then load the actual script
   content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\"></script>\n";
   content << "</head><body></body></html>";
   frame->LoadString(content.str(), "phantomjs://" + url.toLocalFile().toStdString());
@@ -163,12 +169,6 @@ void PhantomJSApp::OnWebKitInitialized()
 void PhantomJSApp::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                     CefRefPtr<CefV8Context> context)
 {
-  auto global = context->GetGlobal();
-  auto phantom = global->GetValue("phantom");
-
-  // forward extension code into global namespace
-  global->SetValue("require", phantom->GetValue("require"), V8_PROPERTY_ATTRIBUTE_NONE);
-
   m_messageRouter->OnContextCreated(browser, frame, context);
 }
 
