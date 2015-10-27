@@ -123,6 +123,11 @@ if (!phantom)
     readFile: function(file) {
       native function readFile();
       return readFile(file);
+    },
+    onScriptLoadError: function() {
+      native function printError();
+      printError("Failed to load script \""+ phantom.args[0] + "\". Exiting now.");
+      phantom.exit();
     }
   };
 

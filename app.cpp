@@ -73,7 +73,7 @@ void PhantomJSApp::OnContextInitialized()
   content << "phantom.libraryPath = \"" << qPrintable(QFileInfo(url.toLocalFile()).absolutePath()) << "\";\n";
   content <<"</script>\n";
   // then load the actual script
-  content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\"></script>\n";
+  content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\" onerror=\"phantom.internal.onScriptLoadError();\"></script>\n";
   content << "</head><body></body></html>";
   frame->LoadString(content.str(), "phantomjs://" + url.toLocalFile().toStdString());
 }
