@@ -3,7 +3,6 @@
 # can be found in the LICENSE file.
 
 find_package(Qt5 NO_MODULE REQUIRED COMPONENTS Gui)
-set(CMAKE_AUTORCC TRUE)
 
 #
 # Source files.
@@ -15,8 +14,9 @@ set(PHANTOMJS_SRCS
   handler.cpp
   print_handler.cpp
   main.cpp
-  resources.qrc
 )
+
+qt5_add_resources(PHANTOMJS_SRCS resources.qrc)
 
 #
 # Shared configuration.
