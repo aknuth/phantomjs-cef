@@ -31,19 +31,6 @@ if (!phantom)
   phantom = {};
 
 (function() {
-  phantom.query = function(request) {
-    return new Promise(function(resolve, reject) {
-      startPhantomJsQuery({
-        request: JSON.stringify(request),
-        persistent: false,
-        onSuccess: resolve,
-        onFailure: function(errorCode, errorMessage) {
-          reject(errorMessage, errorCode);
-        }
-      });
-    });
-  }
-
   phantom.require = function(file) {
     if (file === "webpage") {
       return { create: function() { return new phantom.WebPage; } };
@@ -62,7 +49,8 @@ if (!phantom)
   phantom.injectJs = function(file) {
     native function injectJs();
     return injectJs(file, phantom.libraryPath);
-  }
+  };
+
   // can be overwritten by the user
   phantom.onError = null;
 
@@ -106,8 +94,21 @@ if (!phantom)
         onSuccess: function() {},
         onFailure: function() {}
       });
+    },
+    query: function(request) {
+      return new Promise(function(resolve, reject) {
+        startPhantomJsQuery({
+          request: JSON.stringify(request),
+          persistent: false,
+          onSuccess: resolve,
+          onFailure: function(errorCode, errorMessage) {
+            reject(errorMessage, errorCode);
+          }
+        });
+      });
     }
   };
+
   // will be initialized from code executed via PhantomJSApp::OnContextInitialized
   phantom.args = [];
   phantom.libraryPath = "";

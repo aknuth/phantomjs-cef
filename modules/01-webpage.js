@@ -44,7 +44,7 @@
   phantom.WebPage = function() {
     var webpage = this;
     this.id = null;
-    var createBrowser = phantom.query({type: "createBrowser"})
+    var createBrowser = phantom.internal.query({type: "createBrowser"})
       .then(function(response) {
         webpage.id = parseInt(response);
         setupWebPageSignals(webpage);
@@ -54,7 +54,7 @@
     this.onLoadFinished = function(status) {};
     this.open = function(url, callback) {
       var ret = createBrowser.then(function() {
-        return phantom.query({type: "openWebPage", url: url, browser: webpage.id})
+        return phantom.internal.query({type: "openWebPage", url: url, browser: webpage.id})
       });
       if (typeof(callback) === "function") {
         // backwards compatibility when callback is given
@@ -73,7 +73,7 @@
     };
     this.stop = function() {
       return createBrowser.then(function() {
-        return phantom.query({type: "stopWebPage", browser: webpage.id});
+        return phantom.internal.query({type: "stopWebPage", browser: webpage.id});
       });
     };
     this.close = function() {
@@ -106,7 +106,7 @@
        *
        * i.e.: four IPC hops for a single evaluateJavaScript call :(
        */
-      return phantom.query({
+      return phantom.internal.query({
           type: 'evaluateJavaScript',
           script: script,
           browser: webpage.id
@@ -126,7 +126,7 @@
       console.log(error);
     }
     this.render = function(path) {
-      return phantom.query({
+      return phantom.internal.query({
         type: 'renderPage',
         path: path,
         browser: webpage.id
