@@ -126,10 +126,13 @@ private:
 
 void PhantomJSApp::OnWebKitInitialized()
 {
-
   CefRefPtr<CefV8Handler> handler = new V8Handler();
 
-  foreach (const auto& module, QDir(":/phantomjs/modules").entryInfoList(QDir::NoFilter, QDir::Name)) {
+  const auto modules = QDir(":/phantomjs/modules").entryInfoList(QDir::NoFilter, QDir::Name);
+  if (modules.isEmpty()) {
+    qFatal("No modules found. This is a setup issue with the resource system - try to run CMake again.");
+  }
+  foreach (const auto& module, modules) {
     QFile file(module.absoluteFilePath());
     file.open(QIODevice::ReadOnly | QIODevice::Text);
     std::string extensionCode = file.readAll().toStdString();
