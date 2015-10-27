@@ -59,7 +59,7 @@ void PhantomJSApp::OnContextInitialized()
   std::ostringstream content;
   content << "<html><head>";
   content << "<script type\"text/javascript\">window.onerror = phantom.internal.propagateOnError;\n";
-  content << "phantom.internal.cliArgs = [";
+  content << "phantom.args = [";
   for (const auto& arg : arguments) {
     content << '\"' << arg << "\",";
   }

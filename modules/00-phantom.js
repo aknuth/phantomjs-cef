@@ -101,7 +101,7 @@ if (!phantom)
         onSuccess: function() {},
         onFailure: function() {}
       });
-    },
-    cliArgs: []
+    }
   };
+  phantom.args = [];
 })();

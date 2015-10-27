@@ -28,6 +28,6 @@
 (function() {
   phantom.System = function() {
     var system = this;
-    this.args = phantom.internal.cliArgs;
+    this.args = phantom.args;
   };
 })();
