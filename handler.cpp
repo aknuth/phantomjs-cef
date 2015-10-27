@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& stream, const wchar_t *input)
     return stream << qPrintable(QString::fromWCharArray(input));
 }
 
-QDebug& operator<<(QDebug& stream, CefString string)
+QDebug operator<<(QDebug stream, const CefString& string)
 {
   return stream << QString::fromStdString(string.ToString());
 }

@@ -11,6 +11,10 @@
 #include <vector>
 #include <QHash>
 
+class QDebug;
+
+QDebug operator<<(QDebug stream, const CefString& string);
+
 class PhantomJSHandler : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,

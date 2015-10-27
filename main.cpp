@@ -8,6 +8,8 @@
 
 #include "include/base/cef_logging.h"
 
+#include <iostream>
+
 // Entry point function for all processes.
 int main(int argc, char* argv[])
 {
@@ -25,6 +27,11 @@ int main(int argc, char* argv[])
   if (exit_code >= 0) {
     // The sub-process has completed so return here.
     return exit_code;
+  }
+
+  if (argc < 2) {
+    std::cerr << "Missing script parameter.\n";
+    return 1;
   }
 
   // NOTE: we do not run the Qt eventloop, so don't use signals/slots or similar

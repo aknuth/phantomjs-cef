@@ -51,13 +51,18 @@ if (!phantom)
       return new phantom.System;
     }
     /// TODO:
-    native function require();
-    return require(file);
+    throw Error("require(" + file + ") is not yet implemented");
   };
+
   phantom.exit = function() {
     native function exit();
     exit();
   };
+
+  phantom.injectJs = function(file) {
+    native function injectJs();
+    return injectJs(file, phantom.libraryPath);
+  }
   // can be overwritten by the user
   phantom.onError = null;
 
@@ -103,5 +108,7 @@ if (!phantom)
       });
     }
   };
+  // will be initialized from code executed via PhantomJSApp::OnContextInitialized
   phantom.args = [];
+  phantom.libraryPath = "";
 })();

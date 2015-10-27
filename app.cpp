@@ -53,11 +53,12 @@ void PhantomJSApp::OnContextInitialized()
   auto command_line = CefCommandLine::GetGlobalCommandLine();
   CefCommandLine::ArgumentList arguments;
   command_line->GetArguments(arguments);
+  auto url = QUrl::fromUserInput(QString::fromStdString(arguments.front()), QDir::currentPath(), QUrl::AssumeLocalFile);
 
   // now inject user provided js file and some meta data such as cli arguments
   // which are otherwise not available on the renderer process
   std::ostringstream content;
-  content << "<html><head>";
+  content << "<html><head>\n";
   content << "<script type\"text/javascript\">window.onerror = phantom.internal.propagateOnError;\n";
   content << "phantom.args = [";
   for (const auto& arg : arguments) {
@@ -67,8 +68,8 @@ void PhantomJSApp::OnContextInitialized()
   content << "</script>\n";
 
   if (command_line->HasArguments()) {
-    auto url = QUrl::fromUserInput(QString::fromStdString(arguments.front()), QDir::currentPath(), QUrl::AssumeLocalFile);
-    content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\"></script>";
+    content << "<script type=\"text/javascript\">phantom.libraryPath = \"" << qPrintable(QFileInfo(url.toLocalFile()).absolutePath()) << "\";</script>\n";
+    content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\"></script>\n";
   }
   content << "</head><body></body></html>";
   frame->LoadString(content.str(), "phantomjs://initialize");
@@ -93,6 +94,26 @@ public:
       return true;
     } else if (name == "printError" && !arguments.empty()) {
       std::cerr << arguments.at(0)->GetStringValue() << '\n';
+      return true;
+    } else if (name == "injectJs") {
+      const auto filePath = QString::fromStdString(arguments.at(0)->GetStringValue());
+      const auto libraryPath = QString::fromStdString(arguments.at(1)->GetStringValue());
+      for (const auto& path : {QDir::currentPath(), libraryPath}) {
+        QFileInfo info(path + '/' + filePath);
+        if (!info.isFile()) {
+          continue;
+        }
+        QFile file(info.absoluteFilePath());
+        if (!file.open(QIODevice::Text | QIODevice::ReadOnly)) {
+          continue;
+        }
+        const std::string code = file. readAll().toStdString();
+        CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(code, "file://" + info.absoluteFilePath().toStdString(), 1);
+        retval = CefV8Value::CreateBool(true);
+        return true;
+      }
+
+      retval = CefV8Value::CreateBool(false);
       return true;
     }
     exception = std::string("Unknown PhantomJS function: ") + name.ToString();
