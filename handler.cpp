@@ -89,16 +89,6 @@ bool PhantomJSHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
   return false;
 }
 
-void PhantomJSHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
-                                  const CefString& title)
-{
-  CEF_REQUIRE_UI_THREAD();
-  // TODO: send a signal via persistent callback?
-//   std::string titleStr(title);
-
-//   std::cerr << "title changed to: " << title << '\n';
-}
-
 bool PhantomJSHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
 {
   std::cerr << source << ':' << line << ": " << message << '\n';
@@ -110,6 +100,8 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
   CEF_REQUIRE_UI_THREAD();
 
   m_browsers[browser->GetIdentifier()] = browser;
+
+  qCDebug(handler) << browser->GetIdentifier();
 }
 
 bool PhantomJSHandler::DoClose(CefRefPtr<CefBrowser> browser)
@@ -124,6 +116,8 @@ bool PhantomJSHandler::DoClose(CefRefPtr<CefBrowser> browser)
 void PhantomJSHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
+
+  qCDebug(handler) << browser->GetIdentifier();
 
   m_messageRouter->OnBeforeClose(browser);
 
@@ -143,11 +137,12 @@ void PhantomJSHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
 {
   CEF_REQUIRE_UI_THREAD();
 
+  qCDebug(handler) << browser->GetIdentifier() << frame->IsMain() << errorCode << errorText << failedUrl;
+
   if (frame->IsMain()) {
     handleLoadEnd(browser, errorCode, false);
   }
 
-  qWarning() << browser->GetIdentifier() << errorCode << errorText << failedUrl;
   // Don't display an error for downloaded files.
   if (errorCode == ERR_ABORTED)
     return;
@@ -165,12 +160,12 @@ void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
 {
   CEF_REQUIRE_UI_THREAD();
 
+  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << frame->IsMain();
+
   // filter out events from sub frames
   if (!frame->IsMain()) {
     return;
   }
-
-  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL();
 
   auto callback = m_browserSignals.value(browser->GetIdentifier());
   if (!callback) {
@@ -240,6 +235,8 @@ bool PhantomJSHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<C
 
 void PhantomJSHandler::CloseAllBrowsers(bool force_close)
 {
+  qCDebug(handler) << force_close;
+
   m_messageRouter->CancelPending(nullptr, nullptr);
 
   if (!CefCurrentlyOn(TID_UI)) {
@@ -266,7 +263,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   QJsonParseError error;
   const auto json = QJsonDocument::fromJson(data, &error).object();
   if (error.error) {
-    qWarning() << error.errorString();
+    qCWarning(handler) << error.errorString();
     return false;
   }
 
@@ -301,7 +298,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
   CefRefPtr<CefBrowser> subBrowser = m_browsers.value(subBrowserId);
   if (!subBrowser) {
-    qWarning() << "Unknown browser with id" << subBrowserId << "for request" << json;
+    qCWarning(handler) << "Unknown browser with id" << subBrowserId << "for request" << json;
     return false;
   }
 

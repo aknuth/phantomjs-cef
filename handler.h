@@ -53,8 +53,6 @@ class PhantomJSHandler : public CefClient,
   bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefProcessId source_process, CefRefPtr<CefProcessMessage> message) override;
 
   // CefDisplayHandler methods:
-  virtual void OnTitleChange(CefRefPtr<CefBrowser> browser,
-                             const CefString& title) override;
   virtual bool OnConsoleMessage(CefRefPtr<CefBrowser> browser,
                              const CefString& message,
                              const CefString& source,
@@ -101,8 +99,6 @@ private:
 
   // List of existing browser windows. Only accessed on the CEF UI thread.
   QHash<int, CefRefPtr<CefBrowser>> m_browsers;
-
-  bool m_isClosing;
 
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
   // NOTE: using QHash prevents a strange ABI issue discussed here: http://www.magpcss.org/ceforum/viewtopic.php?f=6&t=13543
