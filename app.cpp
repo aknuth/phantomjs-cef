@@ -50,18 +50,25 @@ void PhantomJSApp::OnContextInitialized()
   auto browser = handler->createBrowser("about:blank");
   auto frame = browser->GetMainFrame();
 
-  // now inject user provided js file
+  auto command_line = CefCommandLine::GetGlobalCommandLine();
+  CefCommandLine::ArgumentList arguments;
+  command_line->GetArguments(arguments);
+
+  // now inject user provided js file and some meta data such as cli arguments
+  // which are otherwise not available on the renderer process
   std::ostringstream content;
   content << "<html><head>";
-  content << "<script type\"text/javascript\">window.onerror = phantom.propagateOnError;</script>\n";
-  auto command_line = CefCommandLine::GetGlobalCommandLine();
+  content << "<script type\"text/javascript\">window.onerror = phantom.internal.propagateOnError;\n";
+  content << "phantom.internal.cliArgs = [";
+  for (const auto& arg : arguments) {
+    content << '\"' << arg << "\",";
+  }
+  content << "];\n";
+  content << "</script>\n";
+
   if (command_line->HasArguments()) {
-    CefCommandLine::ArgumentList arguments;
-    command_line->GetArguments(arguments);
-    for (auto argument : arguments) {
-      auto url = QUrl::fromUserInput(QString::fromStdString(argument), QDir::currentPath(), QUrl::AssumeLocalFile);
-      content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\"></script>";
-    }
+    auto url = QUrl::fromUserInput(QString::fromStdString(arguments.front()), QDir::currentPath(), QUrl::AssumeLocalFile);
+    content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\"></script>";
   }
   content << "</head><body></body></html>";
   frame->LoadString(content.str(), "phantomjs://initialize");

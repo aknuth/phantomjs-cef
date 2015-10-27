@@ -89,7 +89,7 @@
        *
        * we send this query to the handler, i.e. browser process
        * this then finds the browser for the webpage.id and executes
-       * the script there via phantom.handleEvaluateJavaScript.
+       * the script there via phantom.internal.handleEvaluateJavaScript.
        * this in turn sends the return value or exception back to the handler
        * which then triggers the callback for this query...
        *

@@ -47,6 +47,8 @@ if (!phantom)
   phantom.require = function(file) {
     if (file === "webpage") {
       return { create: function() { return new phantom.WebPage; } };
+    } else if (file === "system") {
+      return new phantom.System;
     }
     /// TODO:
     native function require();
@@ -58,42 +60,48 @@ if (!phantom)
   };
   // can be overwritten by the user
   phantom.onError = null;
-  // this is set to window.onerror by default
-  phantom.propagateOnError = function(errorMessage, url, lineNumber, columnNumber, error) {
-    if (typeof phantom.onError === "function") {
-      // keep compatibility with old phantomjs onError handler
-      phantom.onError(errorMessage, error.stack, url, lineNumber, columnNumber, error);
-    } else {
-      native function printError();
-      if (error.stack) {
-        printError(String(error.stack));
+
+  // internal functionality that is not supposed to be used by users of PhantomJS
+  phantom.internal = {
+    // this gets assigned to window.onerror by default
+    propagateOnError: function(errorMessage, url, lineNumber, columnNumber, error) {
+      if (typeof phantom.onError === "function") {
+        // keep compatibility with old phantomjs onError handler
+        phantom.onError(errorMessage, error.stack, url, lineNumber, columnNumber, error);
       } else {
-        printError(errorMessage + " at " + url + ":" + lineNumber + ":" + columnNumber);
+        native function printError();
+        if (error.stack) {
+          printError(String(error.stack));
+        } else {
+          printError(errorMessage + " at " + url + ":" + lineNumber + ":" + columnNumber);
+        }
       }
-    }
-  };
-  phantom.handleEvaluateJavaScript = function(script, queryId) {
-    var retval = null;
-    var exception = null;
-    try {
-      func = eval(script);
-      retval = func();
-    } catch(e) {
-      exception = e;
-      if (e.stack) {
-        exception = e.stack;
+    },
+    // callback from webpage.evaluateJavaScript which runs the script and returns the result
+    handleEvaluateJavaScript: function(script, queryId) {
+      var retval = null;
+      var exception = null;
+      try {
+        func = eval(script);
+        retval = func();
+      } catch(e) {
+        exception = e;
+        if (e.stack) {
+          exception = e.stack;
+        }
       }
-    }
-    startPhantomJsQuery({
-      request: JSON.stringify({
-        type: 'returnEvaluateJavaScript',
-        retval: JSON.stringify(retval),
-        exception: exception ? String(exception) : "",
-        queryId: queryId
-      }),
-      persistent: false,
-      onSuccess: function() {},
-      onFailure: function() {}
-    });
+      startPhantomJsQuery({
+        request: JSON.stringify({
+          type: 'returnEvaluateJavaScript',
+          retval: JSON.stringify(retval),
+          exception: exception ? String(exception) : "",
+          queryId: queryId
+        }),
+        persistent: false,
+        onSuccess: function() {},
+        onFailure: function() {}
+      });
+    },
+    cliArgs: []
   };
 })();
