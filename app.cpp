@@ -66,13 +66,10 @@ void PhantomJSApp::OnContextInitialized()
   }
   content << "];\n";
   content << "</script>\n";
-
-  if (command_line->HasArguments()) {
-    content << "<script type=\"text/javascript\">phantom.libraryPath = \"" << qPrintable(QFileInfo(url.toLocalFile()).absolutePath()) << "\";</script>\n";
-    content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\"></script>\n";
-  }
+  content << "<script type=\"text/javascript\">phantom.libraryPath = \"" << qPrintable(QFileInfo(url.toLocalFile()).absolutePath()) << "\";</script>\n";
+  content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\"></script>\n";
   content << "</head><body></body></html>";
-  frame->LoadString(content.str(), "phantomjs://initialize");
+  frame->LoadString(content.str(), "phantomjs://" + url.toLocalFile().toStdString());
 }
 
 CefRefPtr<CefPrintHandler> PhantomJSApp::GetPrintHandler()
