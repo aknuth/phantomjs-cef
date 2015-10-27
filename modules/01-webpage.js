@@ -53,16 +53,27 @@
     this.onLoadStarted = function() {};
     this.onLoadFinished = function(status) {};
     this.open = function(url, callback) {
-      return createBrowser.then(function() {
+      var ret = createBrowser.then(function() {
         return phantom.query({type: "openWebPage", url: url, browser: webpage.id})
-      }).then(function() {
-        if (typeof(callback) === "function") {
-          callback("success");
-        }
-      }, function() {
-        if (typeof(callback) === "function") {
-          callback("fail");
-        }
+      });
+      if (typeof(callback) === "function") {
+        // backwards compatibility when callback is given
+        return ret.then(function() {
+          if (typeof(callback) === "function") {
+            callback("success");
+          }
+        }, function() {
+          if (typeof(callback) === "function") {
+            callback("fail");
+          }
+        });
+      }
+      // otherwise just return the promise as-is
+      return ret;
+    };
+    this.stop = function() {
+      return createBrowser.then(function() {
+        return phantom.query({type: "stopWebPage", browser: webpage.id});
       });
     };
     this.close = function() {
@@ -79,7 +90,7 @@
         onFailure: function() {}
       });
       webpage.id = null;
-    }
+    };
     this.evaluate = function(script, successCallback, errorCallback) {
       return webpage.evaluateJavaScript(String(script), successCallback, errorCallback);
     };

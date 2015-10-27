@@ -96,7 +96,9 @@ class PhantomJSHandler : public CefClient,
   // Request that all existing browser windows close.
   void CloseAllBrowsers(bool force_close);
 
- private:
+private:
+  void handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, bool success);
+
   // List of existing browser windows. Only accessed on the CEF UI thread.
   QHash<int, CefRefPtr<CefBrowser>> m_browsers;
 
@@ -105,8 +107,8 @@ class PhantomJSHandler : public CefClient,
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
   // NOTE: using QHash prevents a strange ABI issue discussed here: http://www.magpcss.org/ceforum/viewtopic.php?f=6&t=13543
   QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingOpenBrowserRequests;
-  QHash<int64, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingQueryCallbacks;
   QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_browserSignals;
+  QHash<int64, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingQueryCallbacks;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);
