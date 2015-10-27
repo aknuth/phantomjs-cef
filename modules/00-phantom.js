@@ -47,8 +47,17 @@ if (!phantom)
   };
 
   phantom.injectJs = function(file) {
-    native function injectJs();
-    return injectJs(file, phantom.libraryPath);
+    var library = phantom.internal.findLibrary(file);
+    if (!library) {
+      return false;
+    }
+    var code = phantom.internal.readFile(library);
+    if (!code) {
+      return false;
+    }
+    native function executeJavaScript();
+    executeJavaScript(code, library);
+    return true;
   };
 
   // can be overwritten by the user
@@ -106,6 +115,14 @@ if (!phantom)
           }
         });
       });
+    },
+    findLibrary: function(file, libraryPath) {
+      native function findLibrary();
+      return findLibrary(file, libraryPath ? libraryPath : phantom.libraryPath);
+    },
+    readFile: function(file) {
+      native function readFile();
+      return readFile(file);
     }
   };
 

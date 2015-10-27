@@ -330,10 +330,12 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     callback->Success({});
     return true;
   } else if (type == QLatin1String("evaluateJavaScript")) {
-    auto script = json.value(QStringLiteral("script")).toString();
+    auto code = json.value(QStringLiteral("code")).toString();
+    auto url = json.value(QStringLiteral("url")).toString(QStringLiteral("phantomjs://evaluateJavaScript"));
+    auto line = json.value(QStringLiteral("line")).toInt(1);
     m_pendingQueryCallbacks[query_id] = callback;
-    script = "phantom.internal.handleEvaluateJavaScript(" + script + ", " + QString::number(query_id) + ")";
-    subBrowser->GetMainFrame()->ExecuteJavaScript(script.toStdString(), "phantomjs://evaluateJavaScript", 1);
+    code = "phantom.internal.handleEvaluateJavaScript(" + code + ", " + QString::number(query_id) + ")";
+    subBrowser->GetMainFrame()->ExecuteJavaScript(code.toStdString(), url.toStdString(), line);
     return true;
   } else if (type == QLatin1String("renderPage")) {
     const auto path = json.value(QStringLiteral("path")).toString().toStdString();

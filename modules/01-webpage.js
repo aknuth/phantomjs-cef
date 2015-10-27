@@ -91,10 +91,10 @@
       });
       webpage.id = null;
     };
-    this.evaluate = function(script, successCallback, errorCallback) {
-      return webpage.evaluateJavaScript(String(script), successCallback, errorCallback);
+    this.evaluate = function(code, successCallback, errorCallback) {
+      return webpage.evaluateJavaScript(String(code), successCallback, errorCallback);
     };
-    this.evaluateJavaScript = function(script, successCallback, errorCallback) {
+    this.evaluateJavaScript = function(code, successCallback, errorCallback) {
       /*
        * this is pretty convoluted due to the multi-process architecture
        *
@@ -108,7 +108,7 @@
        */
       return phantom.internal.query({
           type: 'evaluateJavaScript',
-          script: script,
+          code: code,
           browser: webpage.id
       }).then(successCallback, function(error) {
         if (typeof(webpage.onError) === "function") {
@@ -132,5 +132,23 @@
         browser: webpage.id
       });
     }
+    this.injectJs = function(file) {
+      var path = phantom.internal.findLibrary(file, webpage.libraryPath);
+      if (!path) {
+        return new Promise(function(resolve, reject) { reject(); });
+      }
+      var code = phantom.internal.readFile(path);
+      if (!code) {
+        return new Promise(function(resolve, reject) { reject(); });
+      }
+      return phantom.internal.query({
+        type: "evaluateJavaScript",
+        code: "function() {\n" + code + "\n}", // wrap in function so the code can be called
+        url: "file://" + path, // file:// is required for proper console.log messages
+        line: 0, // we prepend one line, so start at line 1
+        browser: webpage.id
+      });
+    }
+    this.libraryPath = phantom.libraryPath;
   };
 })();

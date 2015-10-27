@@ -82,6 +82,33 @@ CefRefPtr<CefPrintHandler> PhantomJSApp::GetPrintHandler()
 }
 
 namespace {
+
+std::string findLibrary(const QString& filePath, const QString& libraryPath)
+{
+  for (const auto& path : {QDir::currentPath(), libraryPath}) {
+    QFileInfo info(path + '/' + filePath);
+    if (!info.isFile() || !info.isReadable()) {
+      continue;
+    }
+    return info.absoluteFilePath().toStdString();
+  }
+  return {};
+}
+
+std::string readFile(const std::string& filePath)
+{
+  std::ifstream in(filePath);
+  if (!in) {
+    return {};
+  }
+  std::string contents;
+  in.seekg(0, std::ios::end);
+  contents.resize(in.tellg());
+  in.seekg(0, std::ios::beg);
+  in.read(&contents[0], contents.size());
+  return contents;
+}
+
 class V8Handler : public CefV8Handler
 {
 public:
@@ -95,25 +122,19 @@ public:
     } else if (name == "printError" && !arguments.empty()) {
       std::cerr << arguments.at(0)->GetStringValue() << '\n';
       return true;
-    } else if (name == "injectJs") {
+    } else if (name == "findLibrary") {
       const auto filePath = QString::fromStdString(arguments.at(0)->GetStringValue());
       const auto libraryPath = QString::fromStdString(arguments.at(1)->GetStringValue());
-      for (const auto& path : {QDir::currentPath(), libraryPath}) {
-        QFileInfo info(path + '/' + filePath);
-        if (!info.isFile()) {
-          continue;
-        }
-        QFile file(info.absoluteFilePath());
-        if (!file.open(QIODevice::Text | QIODevice::ReadOnly)) {
-          continue;
-        }
-        const std::string code = file. readAll().toStdString();
-        CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(code, "file://" + info.absoluteFilePath().toStdString(), 1);
-        retval = CefV8Value::CreateBool(true);
-        return true;
-      }
-
-      retval = CefV8Value::CreateBool(false);
+      retval = CefV8Value::CreateString(findLibrary(filePath, libraryPath));
+      return true;
+    } else if (name == "readFile") {
+      const auto file = arguments.at(0)->GetStringValue();
+      retval = CefV8Value::CreateString(readFile(file));
+      return true;
+    } else if (name == "executeJavaScript") {
+      const auto code = arguments.at(0)->GetStringValue();
+      const auto file = arguments.at(1)->GetStringValue();
+      CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(code, "file://" + file.ToString(), 1);
       return true;
     }
     exception = std::string("Unknown PhantomJS function: ") + name.ToString();
