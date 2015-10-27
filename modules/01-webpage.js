@@ -110,8 +110,21 @@
           type: 'evaluateJavaScript',
           script: script,
           browser: webpage.id
-      }).then(successCallback, errorCallback);
+      }).then(successCallback, function(error) {
+        if (typeof(webpage.onError) === "function") {
+          webpage.onError.apply(webpage, arguments);
+        }
+        if (typeof(errorCallback) === "function") {
+          errorCallback.apply(null, arguments);
+        }
+        // rethrow so that any .then continuation can catch this in an error handler
+        throw error;
+      });
     };
+    // can be assigned by the user
+    this.onError = function(error) {
+      console.log(error);
+    }
     this.render = function(path) {
       return phantom.query({
         type: 'renderPage',
