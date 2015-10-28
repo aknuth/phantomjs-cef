@@ -64,10 +64,10 @@ class PhantomJSHandler : public CefClient,
   virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
   bool OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-                     const CefString & target_url, const CefString & target_frame_name,
+                     const CefString& target_url, const CefString& target_frame_name,
                      CefLifeSpanHandler::WindowOpenDisposition target_disposition, bool user_gesture,
-                     const CefPopupFeatures & popupFeatures, CefWindowInfo & windowInfo,
-                     CefRefPtr<CefClient> & client, CefBrowserSettings & settings, bool * no_javascript_access) override;
+                     const CefPopupFeatures& popupFeatures, CefWindowInfo& windowInfo,
+                     CefRefPtr<CefClient>& client, CefBrowserSettings& settings, bool* no_javascript_access) override;
 
   // CefLoadHandler methods:
   virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
@@ -93,7 +93,7 @@ class PhantomJSHandler : public CefClient,
 
   // CefMessageRouterBrowserSide::Handler methods:
   bool OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
-               int64 query_id, const CefString & request, bool persistent,
+               int64 query_id, const CefString& request, bool persistent,
                CefRefPtr<Callback> callback) override;
   void OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                        int64 query_id) override;
