@@ -110,7 +110,13 @@
           type: 'evaluateJavaScript',
           code: code,
           browser: webpage.id
-      }).then(successCallback, function(error) {
+      }).then(function(retval) {
+        retval = JSON.parse(retval);
+        if (typeof(successCallback) === "function") {
+          successCallback(retval);
+        }
+        return retval;
+      }, function(error) {
         if (typeof(webpage.onError) === "function") {
           webpage.onError.apply(webpage, arguments);
         }
@@ -147,6 +153,8 @@
         url: "file://" + path, // file:// is required for proper console.log messages
         line: 0, // we prepend one line, so start at line 1
         browser: webpage.id
+      }).then(function(retval) {
+        return JSON.parse(retval);
       });
     }
     this.libraryPath = phantom.libraryPath;
