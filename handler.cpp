@@ -33,6 +33,24 @@ CefRefPtr<CefMessageRouterBrowserSide::Callback> takeCallback(QHash<int32, CefRe
   }
   return {};
 }
+
+void initWindowInfo(CefWindowInfo& window_info)
+{
+#if defined(OS_WIN)
+  // On Windows we need to specify certain flags that will be passed to
+  // CreateWindowEx().
+  window_info.SetAsPopup(NULL, "phantomjs");
+#endif
+  window_info.SetAsWindowless(0, true);
+}
+
+void initBrowserSettings(CefBrowserSettings& browser_settings)
+{
+  // TODO: make this configurable
+  browser_settings.web_security = STATE_DISABLED;
+  browser_settings.universal_access_from_file_urls = STATE_ENABLED;
+  browser_settings.file_access_from_file_urls = STATE_ENABLED;
+}
 }
 
 PhantomJSHandler::PhantomJSHandler()
@@ -55,21 +73,11 @@ CefMessageRouterConfig PhantomJSHandler::messageRouterConfig()
 
 CefRefPtr<CefBrowser> PhantomJSHandler::createBrowser(const CefString& url)
 {
-  // Information used when creating the native window.
   CefWindowInfo window_info;
-#if defined(OS_WIN)
-  // On Windows we need to specify certain flags that will be passed to
-  // CreateWindowEx().
-  window_info.SetAsPopup(NULL, "phantomjs");
-#endif
-  window_info.SetAsWindowless(0, true);
+  initWindowInfo(window_info);
 
-  // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
-  // TODO: make this configurable
-  browser_settings.web_security = STATE_DISABLED;
-  browser_settings.universal_access_from_file_urls = STATE_ENABLED;
-  browser_settings.file_access_from_file_urls = STATE_ENABLED;
+  initBrowserSettings(browser_settings);
 
   return CefBrowserHost::CreateBrowserSync(window_info, this, url, browser_settings,
                                            NULL);
@@ -127,6 +135,20 @@ void PhantomJSHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
     // All browser windows have closed. Quit the application message loop.
     CefQuitMessageLoop();
   }
+}
+
+bool PhantomJSHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                     const CefString& target_url, const CefString& target_frame_name,
+                                     CefLifeSpanHandler::WindowOpenDisposition target_disposition, bool user_gesture,
+                                     const CefPopupFeatures& popupFeatures, CefWindowInfo& windowInfo,
+                                     CefRefPtr<CefClient>& client, CefBrowserSettings& settings,
+                                     bool* no_javascript_access)
+{
+  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << target_url << target_frame_name;
+  initWindowInfo(windowInfo);
+  initBrowserSettings(settings);
+  client = this;
+  return false;
 }
 
 void PhantomJSHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
