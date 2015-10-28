@@ -257,7 +257,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
 {
   CEF_REQUIRE_UI_THREAD();
 
-  const auto data = QByteArray::fromStdString(request.ToString());
+  const auto data = QByteArray(request.ToString().data());
 
   QJsonParseError error;
   const auto json = QJsonDocument::fromJson(data, &error).object();
