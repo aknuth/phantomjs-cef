@@ -158,11 +158,11 @@ void PhantomJSApp::OnWebKitInitialized()
   foreach (const auto& module, modules) {
     QFile file(module.absoluteFilePath());
     file.open(QIODevice::ReadOnly | QIODevice::Text);
-    std::string extensionCode = file.readAll().toStdString();
-    if (extensionCode.empty()) {
+    const auto extensionCode = file.readAll();
+    if (extensionCode.isEmpty()) {
       qFatal("Module \"%s\" is empty. This is a setup issue with the resource system - try to run CMake again.", qPrintable(module.absoluteFilePath()));
     }
-    CefRegisterExtension(file.fileName().toStdString(), extensionCode, handler);
+    CefRegisterExtension(file.fileName().toStdString(), std::string(extensionCode.constData(), extensionCode.size()), handler);
   }
 }
 
