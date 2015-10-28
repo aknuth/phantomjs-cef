@@ -249,7 +249,6 @@ void PhantomJSHandler::CloseAllBrowsers(bool force_close)
   foreach (const auto& browser, m_browsers) {
     browser->GetHost()->CloseBrowser(force_close);
   }
-  LOG_ASSERT(m_browsers.empty());
 }
 
 bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
