@@ -6,7 +6,6 @@
 
 #include <QDir>
 #include <QFile>
-#include <QUrl>
 
 #include <string>
 #include <iostream>
@@ -53,7 +52,8 @@ void PhantomJSApp::OnContextInitialized()
   auto command_line = CefCommandLine::GetGlobalCommandLine();
   CefCommandLine::ArgumentList arguments;
   command_line->GetArguments(arguments);
-  auto url = QUrl::fromUserInput(QString::fromStdString(arguments.front()), QDir::currentPath(), QUrl::AssumeLocalFile);
+  auto scriptFileInfo = QFileInfo(QString::fromStdString(arguments.front()));
+  const auto scriptPath = scriptFileInfo.absoluteFilePath().toStdString();
 
   // now inject user provided js file and some meta data such as cli arguments
   // which are otherwise not available on the renderer process
@@ -70,12 +70,12 @@ void PhantomJSApp::OnContextInitialized()
   }
   content << "];\n";
   // default initialize the library path to the folder of the script that will be executed
-  content << "phantom.libraryPath = \"" << qPrintable(QFileInfo(url.toLocalFile()).absolutePath()) << "\";\n";
+  content << "phantom.libraryPath = \"" << scriptFileInfo.absolutePath().toStdString() << "\";\n";
   content <<"</script>\n";
   // then load the actual script
-  content << "<script type=\"text/javascript\" src=\"" << url.toString().toStdString() << "\" onerror=\"phantom.internal.onScriptLoadError();\"></script>\n";
+  content << "<script type=\"text/javascript\" src=\"file://" << scriptPath << "\" onerror=\"phantom.internal.onScriptLoadError();\"></script>\n";
   content << "</head><body></body></html>";
-  frame->LoadString(content.str(), "phantomjs://" + url.toLocalFile().toStdString());
+  frame->LoadString(content.str(), "phantomjs://" + scriptPath);
 }
 
 CefRefPtr<CefPrintHandler> PhantomJSApp::GetPrintHandler()
