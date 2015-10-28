@@ -19,7 +19,12 @@ QDebug operator<<(QDebug stream, const CefString& string)
   return stream << QString::fromStdString(string.ToString());
 }
 
-Q_LOGGING_CATEGORY(handler, "phantomjs.handler", QtWarningMsg)
-Q_LOGGING_CATEGORY(print, "phantomjs.print", QtWarningMsg)
-Q_LOGGING_CATEGORY(app, "phantomjs.app", QtWarningMsg)
+#if QT_VERSION >= 0x050400
+#define WARNING_BY_DEFAULT , QtWarningMsg
+#else
+#define WARNING_BY_DEFAULT
+#endif
 
+Q_LOGGING_CATEGORY(handler, "phantomjs.handler" WARNING_BY_DEFAULT)
+Q_LOGGING_CATEGORY(print, "phantomjs.print" WARNING_BY_DEFAULT)
+Q_LOGGING_CATEGORY(app, "phantomjs.app" WARNING_BY_DEFAULT)
