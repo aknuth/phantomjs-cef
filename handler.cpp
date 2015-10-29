@@ -21,6 +21,9 @@
 #include "print_handler.h"
 #include "debug.h"
 
+#include "WindowsKeyboardCodes.h"
+#include "keyevents.h"
+
 namespace {
 CefRefPtr<CefMessageRouterBrowserSide::Callback> takeCallback(QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>>* callbacks,
                                                               const CefRefPtr<CefBrowser>& browser)
@@ -354,6 +357,26 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
         callback->Failure(1, std::string("failed to print to path ") + path.ToString());
       }
     }));
+    return true;
+  } else if (type == QLatin1String("sendEvent")) {
+    const auto event = json.value(QStringLiteral("event")).toString();
+    qCDebug(handler) << json << event;
+    if (event == QLatin1String("keydown") || event == QLatin1String("keyup") || event == QLatin1String("keypress")) {
+      CefKeyEvent keyEvent;
+      keyEvent.windows_key_code = json.value(QStringLiteral("key")).toInt();
+      keyEvent.native_key_code = vkToNative(keyEvent.native_key_code);
+      keyEvent.modifiers = json.value(QStringLiteral("modifiers")).toInt();
+      keyEvent.character = json.value(QStringLiteral("char")).toInt();
+      if (event == QLatin1String("keydown")) {
+        keyEvent.type = KEYEVENT_KEYDOWN;
+      } else if (event == QLatin1String("keyup")) {
+        keyEvent.type = KEYEVENT_KEYUP;
+      } else {
+        keyEvent.type = KEYEVENT_CHAR;
+      }
+      subBrowser->GetHost()->SendKeyEvent(keyEvent);
+    }
+    callback->Success({});
     return true;
   }
   return false;

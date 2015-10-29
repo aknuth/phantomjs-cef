@@ -17,6 +17,12 @@ set(PHANTOMJS_SRCS
   debug.cpp
 )
 
+if (OS_LINUX)
+  LIST(APPEND PHANTOMJS_SRCS
+    keyevents_linux.cpp
+  )
+endif()
+
 qt5_add_resources(PHANTOMJS_SRCS resources.qrc)
 
 #
