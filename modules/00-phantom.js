@@ -92,10 +92,23 @@ if (!phantom)
           exception = e.stack;
         }
       }
+      // native DOM objects cannot be JSON.stringified directly
+      // so instead copy the first level of data over
+      // TODO: extend depth at will, but make sure we don't fall into
+      // cycles
+      function prepareJSONStringify(obj) {
+        if (typeof(obj) !== "object")
+          return obj;
+        var ret = {};
+        for (var k in obj) {
+          ret[k] = obj[k];
+        }
+        return ret;
+      }
       startPhantomJsQuery({
         request: JSON.stringify({
           type: 'returnEvaluateJavaScript',
-          retval: JSON.stringify(retval),
+          retval: JSON.stringify(prepareJSONStringify(retval)),
           exception: exception ? String(exception) : "",
           queryId: queryId
         }),
