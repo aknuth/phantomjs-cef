@@ -111,7 +111,9 @@
           code: code,
           browser: webpage.id
       }).then(function(retval) {
-        retval = JSON.parse(retval);
+        if (retval && typeof(retval) === "string") {
+          retval = JSON.parse(retval);
+        }
         if (typeof(successCallback) === "function") {
           successCallback(retval);
         }
@@ -154,7 +156,10 @@
         line: 0, // we prepend one line, so start at line 1
         browser: webpage.id
       }).then(function(retval) {
-        return JSON.parse(retval);
+        if (retval && typeof(retval) === "string") {
+          retval = JSON.parse(retval);
+        }
+        return retval;
       });
     }
     this.libraryPath = phantom.libraryPath;
