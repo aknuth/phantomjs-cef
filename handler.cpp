@@ -44,7 +44,9 @@ void initWindowInfo(CefWindowInfo& window_info)
   // CreateWindowEx().
   window_info.SetAsPopup(NULL, "phantomjs");
 #endif
-  window_info.SetAsWindowless(0, true);
+  if (!qEnvironmentVariableIntValue("PHANTOMJS_CEF_SHOW_WINDOW")) {
+    window_info.SetAsWindowless(0, true);
+  }
 }
 
 void initBrowserSettings(CefBrowserSettings& browser_settings)
