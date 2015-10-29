@@ -5,11 +5,11 @@ page.open("http://www.google.com")
     return page.injectJs("libs/keylogger.js");
   })
   .then(function() {
-    return page.evaluate(function() {
-      document.activeElement.value = "foo";
+    return page.evaluate(function(value) {
+      document.activeElement.value = value;
       console.log("active element value:" + document.activeElement.value);
       return 1;
-    });
+    }, "foo");
   })
   .then(function() {
     return page.sendEvent('keydown', page.event.key.A, 'a');
@@ -30,14 +30,13 @@ page.open("http://www.google.com")
     return page.sendEvent('keyup', page.event.key.A, 'B', null, page.event.modifier.shift_down);
   })
   .then(function() {
-    return page.evaluate(function() {
+    return page.evaluate(function(value) {
       console.log("active element value:" + document.activeElement.value);
-      console.assert(document.activeElement.value == "fooaB", "failed to simulate key event");
-    });
+      console.assert(document.activeElement.value == value, "failed to simulate key event");
+    }, "fooaB");
   })
   .then(function() {
     return page.evaluate(function() {
-      return page.sendEvent('');
       return document.querySelector("input[type=\"submit\"]").getBoundingClientRect();
     });
   })

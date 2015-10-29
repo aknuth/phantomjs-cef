@@ -17,7 +17,7 @@ function follow(user, callback) {
         } else {
             page.evaluate(function () {
                 return document.querySelector('.UserProfileHeader-statCount').innerText;
-            }, function(data) {
+            }).then(function(data) {
               console.log(user + ': ' + data);
               page.close();
               callback.apply();

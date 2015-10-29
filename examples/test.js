@@ -1,23 +1,21 @@
 console.log('Loading a web page');
 var page = require('webpage').create();
 var url = 'http://phantomjs.org';
-page.open(url, function (status) {
-  if (status === "fail") {
-    console.log("FAIL!");
-    phantom.exit();
-  }
-  console.log("status callback: " + status);
-  console.log("eval ret val:" + page.evaluate(function() {
-    console.log("window.location.hostname = " + window.location.hostname);
-    return window.location.hostname;
-  }, function(retval) {
+page.open(url)
+  .then(function () {
+    console.log("page loaded!");
+    return page.evaluate(function(label) {
+      console.log("window.location.hostname = " + window.location.hostname);
+      console.log("arg is:" + label);
+      return window.location.hostname;
+    }, "foo");
+  })
+  .then(function(retval) {
     console.log("retval: " + retval);
-    phantom.exit();
-  }, function(errorCode, errorMessage) {
-    console.log("execution failed :( code = " + errorCode + ", message = " + errorMessage);
-    phantom.exit();
-  }));
-});
-console.log("exiting?");
+  })
+  .catch(function(error) {
+    console.log("execution failed :( " + error);
+  })
+  .then(phantom.exit)
 
 setTimeout(function() { console.log("Timeout!"); }, 1000);

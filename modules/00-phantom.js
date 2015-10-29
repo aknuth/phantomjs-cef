@@ -80,12 +80,15 @@ if (!phantom)
       }
     },
     // callback from webpage.evaluateJavaScript which runs the script and returns the result
-    handleEvaluateJavaScript: function(script, queryId) {
+    handleEvaluateJavaScript: function(script, args, queryId) {
       var retval = null;
       var exception = null;
+      if (!args) {
+        args = [];
+      }
       try {
         func = eval(script);
-        retval = func();
+        retval = func.apply(null, args);
       } catch(e) {
         exception = e;
         if (e.stack) {

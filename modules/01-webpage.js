@@ -91,10 +91,11 @@
       });
       webpage.id = null;
     };
-    this.evaluate = function(code, successCallback, errorCallback) {
-      return webpage.evaluateJavaScript(String(code), successCallback, errorCallback);
+    this.evaluate = function(code) {
+      arguments[0] = String(arguments[0]);
+      return webpage.evaluateJavaScript.apply(webpage, arguments);
     };
-    this.evaluateJavaScript = function(code, successCallback, errorCallback) {
+    this.evaluateJavaScript = function(code) {
       /*
        * this is pretty convoluted due to the multi-process architecture
        *
@@ -106,24 +107,24 @@
        *
        * i.e.: four IPC hops for a single evaluateJavaScript call :(
        */
+      args = [];
+      for (var i = 1; i < arguments.length; ++i) {
+        args.push(arguments[i]);
+      }
+      args = JSON.stringify(args);
       return phantom.internal.query({
-          type: 'evaluateJavaScript',
+          type: "evaluateJavaScript",
           code: code,
+          args: args,
           browser: webpage.id
       }).then(function(retval) {
         if (retval && typeof(retval) === "string") {
           retval = JSON.parse(retval);
         }
-        if (typeof(successCallback) === "function") {
-          successCallback(retval);
-        }
         return retval;
       }, function(error) {
         if (typeof(webpage.onError) === "function") {
           webpage.onError.apply(webpage, arguments);
-        }
-        if (typeof(errorCallback) === "function") {
-          errorCallback.apply(null, arguments);
         }
         // rethrow so that any .then continuation can catch this in an error handler
         throw error;
