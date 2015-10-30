@@ -238,8 +238,9 @@ void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCo
 
 bool PhantomJSHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
-  // TODO: make this configurable
-  rect.Set(0, 0, 800, 600);
+  qCDebug(handler) << browser->GetIdentifier() << m_viewRects.value(browser->GetIdentifier());
+  const auto size = m_viewRects.value(browser->GetIdentifier(), qMakePair(800, 600));
+  rect.Set(0, 0, size.first, size.second);
   return true;
 }
 
@@ -350,6 +351,19 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     m_pendingQueryCallbacks[query_id] = callback;
     code = "phantom.internal.handleEvaluateJavaScript(" + code + ", " + args + ", " + QString::number(query_id) + ")";
     subBrowser->GetMainFrame()->ExecuteJavaScript(code.toStdString(), url.toStdString(), line);
+    return true;
+  } else if (type == QLatin1String("setViewportSize")) {
+    const auto width = json.value(QStringLiteral("width")).toInt(-1);
+    const auto height = json.value(QStringLiteral("height")).toInt(-1);
+    Q_ASSERT(width >= 0);
+    Q_ASSERT(height >= 0);
+    const auto newSize = qMakePair(width, height);
+    auto& oldSize = m_viewRects[subBrowserId];
+    if (newSize != oldSize) {
+      m_viewRects[subBrowserId] = newSize;
+      subBrowser->GetHost()->WasResized();
+    }
+    callback->Success({});
     return true;
   } else if (type == QLatin1String("renderPage")) {
     const auto path = json.value(QStringLiteral("path")).toString().toStdString();

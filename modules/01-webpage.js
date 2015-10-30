@@ -138,6 +138,8 @@
       return phantom.internal.query({
         type: 'renderPage',
         path: path,
+        width: webpage.viewportSize.width,
+        height: webpage.viewportSize.height,
         browser: webpage.id
       });
     }
@@ -164,7 +166,30 @@
       });
     }
     this.libraryPath = phantom.libraryPath;
-
+    var internal = {
+      // keep in sync with defaults in handler.cpp
+      viewportSize: {width: 800, height: 600},
+    };
+    Object.defineProperty(this, "viewportSize", {
+      get: function() {
+        return internal.viewportSize;
+      },
+      set: function(value) {
+        if (!value.hasOwnProperty("width") || value.width < 0 || !value.hasOwnProperty("height") || value.height < 0) {
+          throw Error("Bad viewport size: " + JSON.stringify(value));
+        }
+        internal.viewportSize = value;
+        createBrowser.then(function() {
+          return phantom.internal.query({
+            type: "setViewportSize",
+            width: value.width,
+            height: value.height,
+            browser: webpage.id
+          });
+        });
+      },
+      configurable: false
+    });
     // TODO: cleanup this api?
     this.sendEvent = function(type, key, char, _2, modifier) {
       if (typeof(char) === "string") {

@@ -112,6 +112,7 @@ private:
   QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingOpenBrowserRequests;
   QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_browserSignals;
   QHash<int64, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingQueryCallbacks;
+  QHash<int32, QPair<int, int>> m_viewRects;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);
