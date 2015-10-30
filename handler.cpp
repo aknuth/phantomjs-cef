@@ -38,24 +38,26 @@ CefRefPtr<CefMessageRouterBrowserSide::Callback> takeCallback(QHash<int32, CefRe
   return {};
 }
 
-void initWindowInfo(CefWindowInfo& window_info)
+void initWindowInfo(CefWindowInfo& window_info, bool isPhantomMain)
 {
 #if defined(OS_WIN)
   // On Windows we need to specify certain flags that will be passed to
   // CreateWindowEx().
   window_info.SetAsPopup(NULL, "phantomjs");
 #endif
-  if (!qEnvironmentVariableIntValue("PHANTOMJS_CEF_SHOW_WINDOW")) {
+  if (isPhantomMain || !qEnvironmentVariableIntValue("PHANTOMJS_CEF_SHOW_WINDOW")) {
     window_info.SetAsWindowless(0, true);
   }
 }
 
-void initBrowserSettings(CefBrowserSettings& browser_settings)
+void initBrowserSettings(CefBrowserSettings& browser_settings, bool isPhantomMain)
 {
   // TODO: make this configurable
-  browser_settings.web_security = STATE_DISABLED;
-  browser_settings.universal_access_from_file_urls = STATE_ENABLED;
-  browser_settings.file_access_from_file_urls = STATE_ENABLED;
+  if (isPhantomMain) {
+    browser_settings.web_security = STATE_DISABLED;
+    browser_settings.universal_access_from_file_urls = STATE_ENABLED;
+    browser_settings.file_access_from_file_urls = STATE_ENABLED;
+  }
 }
 }
 
@@ -77,13 +79,13 @@ CefMessageRouterConfig PhantomJSHandler::messageRouterConfig()
   return config;
 }
 
-CefRefPtr<CefBrowser> PhantomJSHandler::createBrowser(const CefString& url)
+CefRefPtr<CefBrowser> PhantomJSHandler::createBrowser(const CefString& url, bool isPhantomMain)
 {
   CefWindowInfo window_info;
-  initWindowInfo(window_info);
+  initWindowInfo(window_info, isPhantomMain);
 
   CefBrowserSettings browser_settings;
-  initBrowserSettings(browser_settings);
+  initBrowserSettings(browser_settings, isPhantomMain);
 
   return CefBrowserHost::CreateBrowserSync(window_info, this, url, browser_settings,
                                            NULL);
@@ -163,8 +165,8 @@ bool PhantomJSHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<Ce
                                      bool* no_javascript_access)
 {
   qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << target_url << target_frame_name;
-  initWindowInfo(windowInfo);
-  initBrowserSettings(settings);
+  initWindowInfo(windowInfo, false);
+  initBrowserSettings(settings, false);
   client = this;
   return false;
 }
@@ -310,7 +312,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   const auto type = json.value(QStringLiteral("type")).toString();
 
   if (type == QLatin1String("createBrowser")) {
-    auto subBrowser = createBrowser("about:blank");
+    auto subBrowser = createBrowser("about:blank", false);
     callback->Success(std::to_string(subBrowser->GetIdentifier()));
     return true;
   } else if (type == QLatin1String("webPageSignals")) {

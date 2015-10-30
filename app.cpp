@@ -46,7 +46,7 @@ void PhantomJSApp::OnContextInitialized()
   CefRefPtr<PhantomJSHandler> handler(new PhantomJSHandler());
 
   // Create the first browser window with empty content to get our hands on a frame
-  auto browser = handler->createBrowser("about:blank");
+  auto browser = handler->createBrowser("about:blank", true);
   auto frame = browser->GetMainFrame();
 
   auto command_line = CefCommandLine::GetGlobalCommandLine();

@@ -26,7 +26,7 @@ class PhantomJSHandler : public CefClient,
   // Provide access to the single global instance of this object.
   static CefMessageRouterConfig messageRouterConfig();
 
-  CefRefPtr<CefBrowser> createBrowser(const CefString& url);
+  CefRefPtr<CefBrowser> createBrowser(const CefString& url, bool isPhantomMain);
 
   // CefClient methods:
   virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() override
