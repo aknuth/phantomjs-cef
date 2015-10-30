@@ -441,8 +441,8 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     {
       CefMouseEvent mouseEvent;
       mouseEvent.modifiers = modifiers;
-      mouseEvent.x = json.value(QStringLiteral("arg1")).toInt();
-      mouseEvent.y = json.value(QStringLiteral("arg2")).toInt();
+      mouseEvent.x = json.value(QStringLiteral("arg1")).toDouble();
+      mouseEvent.y = json.value(QStringLiteral("arg2")).toDouble();
       cef_mouse_button_type_t type = MBT_LEFT;
       const auto typeString = json.value(QStringLiteral("arg3")).toString();
       if (typeString == QLatin1String("right")) {
