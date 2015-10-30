@@ -318,6 +318,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   } else if (type == QLatin1String("webPageSignals")) {
     const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
     m_browserSignals[subBrowserId] = callback;
+    Q_ASSERT(persistent);
     return true;
   } else if (type == QLatin1String("returnEvaluateJavaScript")) {
     auto otherQueryId = json.value(QStringLiteral("queryId")).toInt(-1);
