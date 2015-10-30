@@ -289,7 +289,8 @@ void PhantomJSHandler::CloseAllBrowsers(bool force_close)
     return;
   }
 
-  foreach (const auto& browser, m_browsers) {
+  // iterate over list of values to ensure we really close all browsers
+  foreach (auto browser, m_browsers.values()) {
     browser->GetHost()->CloseBrowser(force_close);
   }
 }
