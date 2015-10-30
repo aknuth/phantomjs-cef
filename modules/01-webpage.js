@@ -58,7 +58,10 @@
     this.onLoadFinished = function(status) {};
     this.open = function(url, callback) {
       var ret = createBrowser.then(function() {
-        return phantom.internal.query({type: "openWebPage", url: url, browser: webpage.id})
+        return phantom.internal.query({
+          type: "openWebPage",
+          url: url,
+          browser: webpage.id})
       });
       if (typeof(callback) === "function") {
         // backwards compatibility when callback is given
@@ -74,6 +77,14 @@
       }
       // otherwise just return the promise as-is
       return ret;
+    };
+    this.waitForLoaded = function() {
+      return createBrowser.then(function() {
+        return phantom.internal.query({
+          type: "waitForLoaded",
+          browser: webpage.id
+        });
+      });
     };
     this.stop = function() {
       return createBrowser.then(function() {

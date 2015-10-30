@@ -109,7 +109,7 @@ private:
 
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
   // NOTE: using QHash prevents a strange ABI issue discussed here: http://www.magpcss.org/ceforum/viewtopic.php?f=6&t=13543
-  QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingOpenBrowserRequests;
+  QMultiHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_waitForLoadedCallbacks;
   QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_browserSignals;
   QHash<int64, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingQueryCallbacks;
   QHash<int32, QPair<int, int>> m_viewRects;

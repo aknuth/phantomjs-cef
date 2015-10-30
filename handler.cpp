@@ -234,7 +234,7 @@ void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFra
 
 void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, bool success)
 {
-  if (auto callback = takeCallback(&m_pendingOpenBrowserRequests, browser)) {
+  while (auto callback = takeCallback(&m_waitForLoadedCallbacks, browser)) {
     if (success) {
       callback->Success(std::to_string(statusCode));
     } else {
@@ -349,7 +349,10 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   if (type == QLatin1String("openWebPage")) {
     const auto url = json.value(QStringLiteral("url")).toString().toStdString();
     subBrowser->GetMainFrame()->LoadURL(url);
-    m_pendingOpenBrowserRequests[subBrowser->GetIdentifier()] = callback;
+    m_waitForLoadedCallbacks.insert(subBrowser->GetIdentifier(), callback);
+    return true;
+  } else if (type == QLatin1String("waitForLoaded")) {
+    m_waitForLoadedCallbacks.insert(subBrowser->GetIdentifier(), callback);
     return true;
   } else if (type == QLatin1String("stopWebPage")) {
     subBrowser->StopLoad();
@@ -471,7 +474,7 @@ void PhantomJSHandler::OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<
 {
   CEF_REQUIRE_UI_THREAD();
 
-  m_pendingOpenBrowserRequests.remove(browser->GetIdentifier());
+  m_waitForLoadedCallbacks.remove(browser->GetIdentifier());
   m_pendingQueryCallbacks.remove(query_id);
   m_browserSignals.remove(browser->GetIdentifier());
 }
