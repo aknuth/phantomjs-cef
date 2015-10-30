@@ -408,6 +408,9 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
         keyEvent.type = KEYEVENT_CHAR;
       }
       subBrowser->GetHost()->SendKeyEvent(keyEvent);
+    } else {
+      callback->Failure(1, "invalid event type passed to sendEvent: " + event.toStdString());
+      return true;
     }
     callback->Success({});
     return true;
