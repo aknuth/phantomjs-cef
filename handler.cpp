@@ -393,13 +393,11 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     return true;
   } else if (type == QLatin1String("sendEvent")) {
     const auto event = json.value(QStringLiteral("event")).toString();
+    const auto modifiers = json.value(QStringLiteral("modifiers")).toInt();
     qCDebug(handler) << json << event;
     if (event == QLatin1String("keydown") || event == QLatin1String("keyup") || event == QLatin1String("keypress")) {
       CefKeyEvent keyEvent;
-      keyEvent.windows_key_code = json.value(QStringLiteral("key")).toInt();
-      keyEvent.native_key_code = vkToNative(keyEvent.native_key_code);
-      keyEvent.modifiers = json.value(QStringLiteral("modifiers")).toInt();
-      keyEvent.character = json.value(QStringLiteral("char")).toInt();
+      keyEvent.modifiers = modifiers;
       if (event == QLatin1String("keydown")) {
         keyEvent.type = KEYEVENT_KEYDOWN;
       } else if (event == QLatin1String("keyup")) {
@@ -407,7 +405,43 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
       } else {
         keyEvent.type = KEYEVENT_CHAR;
       }
-      subBrowser->GetHost()->SendKeyEvent(keyEvent);
+      auto arg1 = json.value(QStringLiteral("arg1"));
+      if (arg1.isString()) {
+        foreach (auto c, arg1.toString()) {
+          keyEvent.character = c.unicode();
+          keyEvent.windows_key_code = c.unicode();
+          keyEvent.native_key_code = c.unicode();
+          subBrowser->GetHost()->SendKeyEvent(keyEvent);
+        }
+      } else {
+        keyEvent.windows_key_code = arg1.toInt();
+        keyEvent.native_key_code = vkToNative(keyEvent.native_key_code);
+        keyEvent.character = arg1.toInt();
+        subBrowser->GetHost()->SendKeyEvent(keyEvent);
+      }
+    } else if (event == QLatin1String("click") || event == QLatin1String("doubleclick")
+            || event == QLatin1String("mousedown") || event == QLatin1String("mouseup"))
+    {
+      CefMouseEvent mouseEvent;
+      mouseEvent.modifiers = modifiers;
+      mouseEvent.x = json.value(QStringLiteral("arg1")).toInt();
+      mouseEvent.y = json.value(QStringLiteral("arg2")).toInt();
+      cef_mouse_button_type_t type = MBT_LEFT;
+      const auto typeString = json.value(QStringLiteral("arg3")).toString();
+      if (typeString == QLatin1String("right")) {
+        type = MBT_RIGHT;
+      } else if (typeString == QLatin1String("middle")) {
+        type = MBT_MIDDLE;
+      }
+      if (event == QLatin1String("doubleclick")) {
+        subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, false, 2);
+        subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, true, 2);
+      } else if (event == QLatin1String("click")) {
+        subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, false, 1);
+        subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, true, 1);
+      } else {
+        subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, event == QLatin1String("mouseup"), 1);
+      }
     } else {
       callback->Failure(1, "invalid event type passed to sendEvent: " + event.toStdString());
       return true;

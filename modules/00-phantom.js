@@ -150,4 +150,10 @@ if (!phantom)
   // will be initialized from code executed via PhantomJSApp::OnContextInitialized
   phantom.args = [];
   phantom.libraryPath = "";
+
+  phantom.wait = function(msDelay) {
+    return new Promise(function (fulfill) {
+      setTimeout(fulfill, msDelay);
+    });
+  };
 })();

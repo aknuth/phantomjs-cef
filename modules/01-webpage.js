@@ -195,19 +195,16 @@
       configurable: false
     });
     // TODO: cleanup this api?
-    this.sendEvent = function(type, key, char, _2, modifier) {
-      if (typeof(char) === "string") {
-        if (char.length != 1) {
-          throw Error("Multi-char key events are not supported, input was: " + char);
-        }
-        char = char.charCodeAt(0);
-      }
+    //       i.e. a key event and a mouse event function
+    //       or take an object of args
+    this.sendEvent = function(type, arg1, arg2, arg3, modifier) {
       return phantom.internal.query({
         type: "sendEvent",
         event: type,
-        key: key,
+        arg1: arg1,
+        arg2: arg2,
+        arg3: arg3,
         modifier: modifier,
-        char: char,
         browser: webpage.id
       });
     };
