@@ -50,6 +50,10 @@
         setupWebPageSignals(webpage);
       });
 
+    this.onConsoleMessage = function(message, source, line) {
+      native function printError();
+      printError(source + ":" + line + ": " + message);
+    };
     this.onLoadStarted = function() {};
     this.onLoadFinished = function(status) {};
     this.open = function(url, callback) {

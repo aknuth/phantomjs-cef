@@ -12,6 +12,7 @@
 
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
@@ -104,7 +105,19 @@ bool PhantomJSHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 
 bool PhantomJSHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
 {
-  std::cerr << source << ':' << line << ": " << message << '\n';
+  auto callback = m_browserSignals.value(browser->GetIdentifier());
+  if (callback) {
+    QJsonObject obj;
+    obj[QStringLiteral("signal")] = QStringLiteral("onConsoleMessage");
+    QJsonArray args;
+    args.append(QString::fromStdString(message));
+    args.append(QString::fromStdString(source));
+    args.append(line);
+    obj[QStringLiteral("args")] = args;
+    callback->Success(QJsonDocument(obj).toJson().constData());
+  } else {
+    std::cerr << source << ':' << line << ": " << message << '\n';
+  }
   return true;
 }
 
