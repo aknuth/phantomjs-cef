@@ -81,43 +81,53 @@ if (!phantom)
     },
     // callback from webpage.evaluateJavaScript which runs the script and returns the result
     handleEvaluateJavaScript: function(script, args, queryId) {
-      var retval = null;
-      var exception = null;
-      if (!args) {
-        args = [];
-      }
-      try {
+      var run = new Promise(function(success, fail) {
         func = eval(script);
-        retval = func.apply(null, args);
-      } catch(e) {
-        exception = e;
-        if (e.stack) {
-          exception = e.stack;
+        var retval = func.apply(null, args ? args : []);
+        if (retval instanceof Promise) {
+          retval.then(success, fail);
+        } else {
+          success(retval);
         }
-      }
-      // native DOM objects cannot be JSON.stringified directly
-      // so instead copy the first level of data over
-      // TODO: extend depth at will, but make sure we don't fall into
-      // cycles
-      function prepareJSONStringify(obj) {
-        if (typeof(obj) !== "object")
-          return obj;
-        var ret = {};
-        for (var k in obj) {
-          ret[k] = obj[k];
+      });
+      run.then(function(retval) {
+        // native DOM objects cannot be JSON.stringified directly
+        // so instead copy the first level of data over
+        // TODO: extend depth at will, but make sure we don't fall into cycles
+        function prepareJSONStringify(obj) {
+          if (typeof(obj) !== "object") {
+            return obj;
+          }
+          var ret = {};
+          for (var k in obj) {
+            ret[k] = obj[k];
+          }
+          return ret;
         }
-        return ret;
-      }
-      startPhantomJsQuery({
-        request: JSON.stringify({
-          type: 'returnEvaluateJavaScript',
-          retval: JSON.stringify(prepareJSONStringify(retval)),
-          exception: exception ? String(exception) : "",
-          queryId: queryId
-        }),
-        persistent: false,
-        onSuccess: function() {},
-        onFailure: function() {}
+        startPhantomJsQuery({
+          request: JSON.stringify({
+            type: 'returnEvaluateJavaScript',
+            retval: JSON.stringify(prepareJSONStringify(retval)),
+            queryId: queryId
+          }),
+          persistent: false,
+          onSuccess: function() {},
+          onFailure: function() {}
+        });
+      }).catch(function(error) {
+        if (error instanceof Error && error.stack) {
+          error = error.stack;
+        }
+        startPhantomJsQuery({
+          request: JSON.stringify({
+            type: 'returnEvaluateJavaScript',
+            exception: String(error),
+            queryId: queryId
+          }),
+          persistent: false,
+          onSuccess: function() {},
+          onFailure: function() {}
+        });
       });
     },
     query: function(request) {

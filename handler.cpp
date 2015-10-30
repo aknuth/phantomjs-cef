@@ -324,13 +324,13 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     auto otherQueryId = json.value(QStringLiteral("queryId")).toInt(-1);
     auto it = m_pendingQueryCallbacks.find(otherQueryId);
     if (it != m_pendingQueryCallbacks.end()) {
-      auto retval = json.value(QStringLiteral("retval")).toString();
-      auto exception = json.value(QStringLiteral("exception")).toString();
+      auto exception = json.value(QStringLiteral("exception"));
       auto otherCallback = it.value();
-      if (exception.isEmpty()) {
-        otherCallback->Success(retval.toStdString());
+      if (!exception.isUndefined()) {
+        otherCallback->Failure(1, exception.toString().toStdString());
       } else {
-        otherCallback->Failure(1, exception.toStdString());
+        auto retval = json.value(QStringLiteral("retval")).toString();
+        otherCallback->Success(retval.toStdString());
       }
       m_pendingQueryCallbacks.erase(it);
       callback->Success({});
