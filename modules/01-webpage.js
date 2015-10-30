@@ -161,11 +161,11 @@
     this.injectJs = function(file) {
       var path = phantom.internal.findLibrary(file, webpage.libraryPath);
       if (!path) {
-        return new Promise(function(resolve, reject) { reject(); });
+        return new Promise(function(resolve, reject) { reject(Error("Could not find file to inject: " + file)); });
       }
       var code = phantom.internal.readFile(path);
       if (!code) {
-        return new Promise(function(resolve, reject) { reject(); });
+        return new Promise(function(resolve, reject) { reject(Error("Could not read file to inject: " + path)); });
       }
       return phantom.internal.query({
         type: "evaluateJavaScript",
