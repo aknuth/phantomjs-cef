@@ -225,43 +225,42 @@
         is_right: 1 << 11,
       },
       key: {
-        UNKNOWN: 0,
-        BACK: 0x08,
-        TAB: 0x09,
-        CLEAR: 0x0C,
-        RETURN: 0x0D,
-        SHIFT: 0x10,
-        CONTROL: 0x11, // CTRL key
-        MENU: 0x12, // ALT key
-        PAUSE: 0x13, // PAUSE key
-        CAPITAL: 0x14, // CAPS LOCK key
-        KANA: 0x15, // Input Method Editor (IME) Kana mode
-        HANGUL: 0x15, // IME Hangul mode
-        JUNJA: 0x17, // IME Junja mode
-        FINAL: 0x18, // IME final mode
-        HANJA: 0x19, // IME Hanja mode
-        KANJI: 0x19, // IME Kanji mode
-        ESCAPE: 0x1B, // ESC key
-        CONVERT: 0x1C, // IME convert
-        NONCONVERT: 0x1D, // IME nonconvert
-        ACCEPT: 0x1E, // IME accept
-        MODECHANGE: 0x1F, // IME mode change request
-        SPACE: 0x20, // SPACE key
-        PRIOR: 0x21, // PAGE UP key
-        NEXT: 0x22, // PAGE DOWN key
-        END: 0x23, // END key
-        HOME: 0x24, // HOME key
-        LEFT: 0x25, // LEFT ARROW key
-        UP: 0x26, // UP ARROW key
-        RIGHT: 0x27, // RIGHT ARROW key
-        DOWN: 0x28, // DOWN ARROW key
-        SELECT: 0x29, // SELECT key
-        PRINT: 0x2A, // PRINT key
-        EXECUTE: 0x2B, // EXECUTE key
-        SNAPSHOT: 0x2C, // PRINT SCREEN key
-        INSERT: 0x2D, // INS key
-        DELETE: 0x2E, // DEL key
-        HELP: 0x2F, // HELP key
+        Back: 0x08,
+        Tab: 0x09,
+        Clear: 0x0C,
+        Return: 0x0D,
+        Shift: 0x10,
+        Control: 0x11, // CTRL key
+        Menu: 0x12, // ALT key
+        Pause: 0x13, // PAUSE key
+        Capital: 0x14, // CAPS LOCK key
+        Kana: 0x15, // Input Method Editor (IME) Kana mode
+        Hangul: 0x15, // IME Hangul mode
+        Junja: 0x17, // IME Junja mode
+        Final: 0x18, // IME final mode
+        Hanja: 0x19, // IME Hanja mode
+        Kanji: 0x19, // IME Kanji mode
+        Escape: 0x1B, // ESC key
+        Convert: 0x1C, // IME convert
+        NonConvert: 0x1D, // IME nonconvert
+        Accept: 0x1E, // IME accept
+        ModeChange: 0x1F, // IME mode change request
+        Space: 0x20, // SPACE key
+        Prior: 0x21, // PAGE UP key
+        Next: 0x22, // PAGE DOWN key
+        End: 0x23, // END key
+        Home: 0x24, // HOME key
+        Left: 0x25, // LEFT ARROW key
+        Up: 0x26, // UP ARROW key
+        Right: 0x27, // RIGHT ARROW key
+        Down: 0x28, // DOWN ARROW key
+        Select: 0x29, // SELECT key
+        Print: 0x2A, // PRINT key
+        Execute: 0x2B, // EXECUTE key
+        Snapshot: 0x2C, // PRINT SCREEN key
+        Insert: 0x2D, // INS key
+        Delete: 0x2E, // DEL key
+        Help: 0x2F, // HELP key
 
         0: 0x30,
         1: 0x31,
@@ -300,31 +299,31 @@
         Y: 0x59,
         Z: 0x5A,
 
-        LWIN: 0x5B, // Left Windows key (Microsoft Natural keyboard)
+        Lwin: 0x5B, // Left Windows key (Microsoft Natural keyboard)
 
-        RWIN: 0x5C, // Right Windows key (Natural keyboard)
+        Rwin: 0x5C, // Right Windows key (Natural keyboard)
 
-        APPS: 0x5D, // Applications key (Natural keyboard)
+        Apps: 0x5D, // Applications key (Natural keyboard)
 
-        SLEEP: 0x5F, // Computer Sleep key
+        Sleep: 0x5F, // Computer Sleep key
 
         // Num pad keys
-        NUMPAD0: 0x60,
-        NUMPAD1: 0x61,
-        NUMPAD2: 0x62,
-        NUMPAD3: 0x63,
-        NUMPAD4: 0x64,
-        NUMPAD5: 0x65,
-        NUMPAD6: 0x66,
-        NUMPAD7: 0x67,
-        NUMPAD8: 0x68,
-        NUMPAD9: 0x69,
-        MULTIPLY: 0x6A,
-        ADD: 0x6B,
-        SEPARATOR: 0x6C,
-        SUBTRACT: 0x6D,
-        DECIMAL: 0x6E,
-        DIVIDE: 0x6F,
+        Numpad0: 0x60,
+        Numpad1: 0x61,
+        Numpad2: 0x62,
+        Numpad3: 0x63,
+        Numpad4: 0x64,
+        Numpad5: 0x65,
+        Numpad6: 0x66,
+        Numpad7: 0x67,
+        Numpad8: 0x68,
+        Numpad9: 0x69,
+        Multiply: 0x6A,
+        Add: 0x6b,
+        Separator: 0x6C,
+        Subtract: 0x6D,
+        Decimal: 0x6E,
+        Divide: 0x6f,
 
         F1: 0x70,
         F2: 0x71,
@@ -351,91 +350,36 @@
         F23: 0x86,
         F24: 0x87,
 
-        NUMLOCK: 0x90,
-        SCROLL: 0x91,
-        LSHIFT: 0xA0,
-        RSHIFT: 0xA1,
-        LCONTROL: 0xA2,
-        RCONTROL: 0xA3,
-        LMENU: 0xA4,
-        RMENU: 0xA5,
+        Numlock: 0x90,
+        Scroll: 0x91,
+        Lshift: 0xA0,
+        Rshift: 0xA1,
+        Lcontrol: 0xA2,
+        Rcontrol: 0xA3,
+        Lmenu: 0xA4,
+        Rmenu: 0xA5,
 
-        BROWSER_BACK: 0xA6, // Windows 2000/XP: Browser Back key
-        BROWSER_FORWARD: 0xA7, // Windows 2000/XP: Browser Forward key
-        BROWSER_REFRESH: 0xA8, // Windows 2000/XP: Browser Refresh key
-        BROWSER_STOP: 0xA9, // Windows 2000/XP: Browser Stop key
-        BROWSER_SEARCH: 0xAA, // Windows 2000/XP: Browser Search key
-        BROWSER_FAVORITES: 0xAB, // Windows 2000/XP: Browser Favorites key
-        BROWSER_HOME: 0xAC, // Windows 2000/XP: Browser Start and Home key
-        VOLUME_MUTE: 0xAD, // Windows 2000/XP: Volume Mute key
-        VOLUME_DOWN: 0xAE, // Windows 2000/XP: Volume Down key
-        VOLUME_UP: 0xAF, // Windows 2000/XP: Volume Up key
-        MEDIA_NEXT_TRACK: 0xB0, // Windows 2000/XP: Next Track key
-        MEDIA_PREV_TRACK: 0xB1, // Windows 2000/XP: Previous Track key
-        MEDIA_STOP: 0xB2, // Windows 2000/XP: Stop Media key
-        MEDIA_PLAY_PAUSE: 0xB3, // Windows 2000/XP: Play/Pause Media key
-        MEDIA_LAUNCH_MAIL: 0xB4, // Windows 2000/XP: Start Mail key
-        MEDIA_LAUNCH_MEDIA_SELECT: 0xB5, // Windows 2000/XP: Select Media key
-        MEDIA_LAUNCH_APP1: 0xB6, // VK_LAUNCH_APP1 (B6) Windows 2000/XP: Start Application 1 key
-        MEDIA_LAUNCH_APP2: 0xB7, // VK_LAUNCH_APP2 (B7) Windows 2000/XP: Start Application 2 key
+        Browser_Back: 0xA6, // Windows 2000/XP: Browser Back key
+        Browser_Forward: 0xA7, // Windows 2000/XP: Browser Forward key
+        Browser_Refresh: 0xA8, // Windows 2000/XP: Browser Refresh key
+        Browser_Stop: 0xA9, // Windows 2000/XP: Browser Stop key
+        Browser_Search: 0xAA, // Windows 2000/XP: Browser Search key
+        Browser_Favorites: 0xAB, // Windows 2000/XP: Browser Favorites key
+        Browser_Home: 0xAC, // Windows 2000/XP: Browser Start and Home key
+        Volume_Mute: 0xAD, // Windows 2000/XP: Volume Mute key
+        Volume_Down: 0xAE, // Windows 2000/XP: Volume Down key
+        Volume_Up: 0xAF, // Windows 2000/XP: Volume Up key
+        Media_Next_Track: 0xB0, // Windows 2000/XP: Next Track key
+        Media_Prev_Track: 0xB1, // Windows 2000/XP: Previous Track key
+        Media_Stop: 0xB2, // Windows 2000/XP: Stop Media key
+        Media_Play_Pause: 0xB3, // Windows 2000/XP: Play/Pause Media key
+        Media_Launch_Mail: 0xB4, // Windows 2000/XP: Start Mail key
+        Media_Launch_Media_Select: 0xB5, // Windows 2000/XP: Select Media key
+        Media_Launch_App1: 0xB6, // VK_LAUNCH_APP1 (B6) Windows 2000/XP: Start Application 1 key
+        Media_Launch_App2: 0xB7, // VK_LAUNCH_APP2 (B7) Windows 2000/XP: Start Application 2 key
 
-        // VK_OEM_1 (BA) Used for miscellaneous characters; it can vary by keyboard. Windows 2000/XP: For the US standard keyboard, the ';:' key
-        OEM_1: 0xBA,
-
-        // Windows 2000/XP: For any country/region, the '+' key
-        OEM_PLUS: 0xBB,
-
-        // Windows 2000/XP: For any country/region, the ',' key
-        OEM_COMMA: 0xBC,
-
-        // Windows 2000/XP: For any country/region, the '-' key
-        OEM_MINUS: 0xBD,
-
-        // Windows 2000/XP: For any country/region, the '.' key
-        OEM_PERIOD: 0xBE,
-
-        // VK_OEM_2 (BF) Used for miscellaneous characters; it can vary by keyboard. Windows 2000/XP: For the US standard keyboard, the '/?' key
-        OEM_2: 0xBF,
-
-        // VK_OEM_3 (C0) Used for miscellaneous characters; it can vary by keyboard. Windows 2000/XP: For the US standard keyboard, the '`~' key
-        OEM_3: 0xC0,
-
-        // VK_OEM_4 (DB) Used for miscellaneous characters; it can vary by keyboard. Windows 2000/XP: For the US standard keyboard, the '[{' key
-        OEM_4: 0xDB,
-
-        // VK_OEM_5 (DC) Used for miscellaneous characters; it can vary by keyboard. Windows 2000/XP: For the US standard keyboard, the '\|' key
-        OEM_5: 0xDC,
-
-        // VK_OEM_6 (DD) Used for miscellaneous characters; it can vary by keyboard. Windows 2000/XP: For the US standard keyboard, the ']}' key
-        OEM_6: 0xDD,
-
-        // VK_OEM_7 (DE) Used for miscellaneous characters; it can vary by keyboard. Windows 2000/XP: For the US standard keyboard, the 'single-quote/double-quote' key
-        OEM_7: 0xDE,
-
-        // VK_OEM_8 (DF) Used for miscellaneous characters; it can vary by keyboard.
-        OEM_8: 0xDF,
-
-        // VK_OEM_102 (E2) Windows 2000/XP: Either the angle bracket key or the backslash key on the RT 102-key keyboard
-        OEM_102: 0xE2,
-
-        // Windows 95/98/Me, Windows NT 4.0, Windows 2000/XP: IME PROCESS key
-        PROCESSKEY: 0xE5,
-
-        // Windows 2000/XP: Used to pass Unicode characters as if they were keystrokes. The VK_PACKET key is the low word of a 32-bit Virtual Key value used for non-keyboard input methods. For more information, see Remark in KEYBDINPUT,SendInput, WM_KEYDOWN, and WM_KEYUP
-        PACKET: 0xE7,
-
-        ATTN: 0xF6, // Attn key
-        CRSEL: 0xF7, // CrSel key
-        EXSEL: 0xF8, // ExSel key
-        EREOF: 0xF9, // Erase EOF key
-        PLAY: 0xFA, // Play key
-        ZOOM: 0xFB, // Zoom key
-
-        NONAME: 0xFC, // Reserved for future use
-
-        PA1: 0xFD, // VK_PA1 (FD) PA1 key
-
-        OEM_CLEAR: 0xFE, // Clear key
+        Play: 0xFA, // Play key
+        Zoom: 0xFB, // Zoom key
       }
     };
   };

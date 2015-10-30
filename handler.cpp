@@ -398,26 +398,40 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     if (event == QLatin1String("keydown") || event == QLatin1String("keyup") || event == QLatin1String("keypress")) {
       CefKeyEvent keyEvent;
       keyEvent.modifiers = modifiers;
-      if (event == QLatin1String("keydown")) {
-        keyEvent.type = KEYEVENT_KEYDOWN;
-      } else if (event == QLatin1String("keyup")) {
-        keyEvent.type = KEYEVENT_KEYUP;
-      } else {
-        keyEvent.type = KEYEVENT_CHAR;
-      }
       auto arg1 = json.value(QStringLiteral("arg1"));
       if (arg1.isString()) {
         foreach (auto c, arg1.toString()) {
           keyEvent.character = c.unicode();
           keyEvent.windows_key_code = c.unicode();
           keyEvent.native_key_code = c.unicode();
+          keyEvent.type = KEYEVENT_KEYDOWN;
+          subBrowser->GetHost()->SendKeyEvent(keyEvent);
+          keyEvent.type = KEYEVENT_CHAR;
+          subBrowser->GetHost()->SendKeyEvent(keyEvent);
+          keyEvent.type = KEYEVENT_KEYUP;
           subBrowser->GetHost()->SendKeyEvent(keyEvent);
         }
       } else {
+        if (event == QLatin1String("keydown")) {
+          keyEvent.type = KEYEVENT_KEYDOWN;
+        } else if (event == QLatin1String("keyup")) {
+          keyEvent.type = KEYEVENT_KEYUP;
+        } else {
+          keyEvent.type = KEYEVENT_CHAR;
+        }
         keyEvent.windows_key_code = arg1.toInt();
         keyEvent.native_key_code = vkToNative(keyEvent.native_key_code);
         keyEvent.character = arg1.toInt();
-        subBrowser->GetHost()->SendKeyEvent(keyEvent);
+        if (keyEvent.type != KEYEVENT_CHAR) {
+          subBrowser->GetHost()->SendKeyEvent(keyEvent);
+        } else {
+          keyEvent.type = KEYEVENT_KEYDOWN;
+          subBrowser->GetHost()->SendKeyEvent(keyEvent);
+          keyEvent.type = KEYEVENT_CHAR;
+          subBrowser->GetHost()->SendKeyEvent(keyEvent);
+          keyEvent.type = KEYEVENT_KEYUP;
+          subBrowser->GetHost()->SendKeyEvent(keyEvent);
+        }
       }
     } else if (event == QLatin1String("click") || event == QLatin1String("doubleclick")
             || event == QLatin1String("mousedown") || event == QLatin1String("mouseup"))
