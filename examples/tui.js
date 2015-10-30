@@ -17,6 +17,9 @@ function sendEvent(type, selector) {
 
 page.open('http://www.tuifly.com/de/index.html')
     .then(function() {
+      return page.injectJs("libs/waitForDomElement.js");
+    })
+    .then(function() {
         return sendEvent('click', 'label[data-oneway=true]');
     })
     .then(function() {
@@ -26,13 +29,12 @@ page.open('http://www.tuifly.com/de/index.html')
         return page.sendEvent('keypress', 'TXL');
     })
     .then(function() {
-        return phantom.wait(1000);
+        return page.evaluate(function() {
+            return waitForDomElement(".suggestlist li[data-code=\"TXL\"]");
+        });
     })
     .then(function() {
         return page.sendEvent('keypress', page.event.key.Tab);
-    })
-    .then(function() {
-        return phantom.wait(1000);
     })
     .then(function() {
         return sendEvent('click','input[data-type="destination"]');
@@ -41,13 +43,12 @@ page.open('http://www.tuifly.com/de/index.html')
         return page.sendEvent('keypress', 'LAX');
     })
     .then(function() {
-        return phantom.wait(1000);
+        return page.evaluate(function() {
+            return waitForDomElement(".suggestlist li[data-code=\"LAX\"]");
+        });
     })
     .then(function() {
         return page.sendEvent('keypress', page.event.key.Tab);
-    })
-    .then(function() {
-        return phantom.wait(1000);
     })
     .then(function() {
         return sendEvent('click', 'button.big');

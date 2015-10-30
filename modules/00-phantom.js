@@ -104,10 +104,15 @@ if (!phantom)
           }
           return ret;
         }
+        try {
+          retval = JSON.stringify(prepareJSONStringify(retval))
+        } catch(error) {
+          console.log("failed to stringify JavaScript return value");
+        }
         startPhantomJsQuery({
           request: JSON.stringify({
             type: 'returnEvaluateJavaScript',
-            retval: JSON.stringify(prepareJSONStringify(retval)),
+            retval: retval,
             queryId: queryId
           }),
           persistent: false,
