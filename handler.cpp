@@ -273,7 +273,9 @@ void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType t
   auto info = takeCallback(&m_paintCallbacks, browser);
   if (info.callback) {
     QImage image(reinterpret_cast<const uchar*>(buffer), width, height, QImage::Format_ARGB32);
-    // TODO: clipRect
+    if (info.clipRect.isValid()) {
+      image = image.copy(info.clipRect);
+    }
     if (info.format.isEmpty()) {
       if (image.save(info.path)) {
         info.callback->Success({});
@@ -434,7 +436,14 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   } else if (type == QLatin1String("renderImage")) {
     const auto path = json.value(QStringLiteral("path")).toString();
     const auto format = json.value(QStringLiteral("format")).toString();
-    m_paintCallbacks[subBrowserId] = {path, format, callback};
+    const auto clipRectJson = json.value(QStringLiteral("clipRect")).toObject();
+    const auto clipRect = QRect(
+      clipRectJson.value(QStringLiteral("left")).toDouble(),
+      clipRectJson.value(QStringLiteral("top")).toDouble(),
+      clipRectJson.value(QStringLiteral("width")).toDouble(),
+      clipRectJson.value(QStringLiteral("height")).toDouble()
+    );
+    m_paintCallbacks[subBrowserId] = {path, format, clipRect, callback};
     subBrowser->GetHost()->Invalidate(PET_VIEW);
     return true;
   } else if (type == QLatin1String("printPdf")) {

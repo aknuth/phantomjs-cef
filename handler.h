@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <QHash>
+#include <QRect>
 
 class PhantomJSHandler : public CefClient,
                       public CefDisplayHandler,
@@ -117,6 +118,7 @@ private:
   {
     QString path;
     QString format;
+    QRect clipRect;
     CefRefPtr<CefMessageRouterBrowserSide::Callback> callback;
   };
   QHash<int32, PaintInfo> m_paintCallbacks;

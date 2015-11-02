@@ -25,7 +25,6 @@ if (system.args.length > 3 && system.args[2].substr(-4) === ".pdf") {
         var pageWidth = parseInt(size[0], 10);
         var pageHeight = parseInt(size[1], 10);
         page.viewportSize = { width: pageWidth, height: pageHeight };
-        // TODO:
         page.clipRect = { top: 0, left: 0, width: pageWidth, height: pageHeight };
     } else {
         console.log("size:" + system.args[3]);
