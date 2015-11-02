@@ -81,9 +81,12 @@ void initBrowserSettings(CefBrowserSettings& browser_settings, bool isPhantomMai
     browser_settings.file_access_from_file_urls = STATE_ENABLED;
   } else {
     browser_settings.web_security = toState(config.value(QStringLiteral("webSecurityEnabled")));
-    browser_settings.javascript = toState(config.value(QStringLiteral("javascriptEnabled")));
     browser_settings.universal_access_from_file_urls = toState(config.value(QStringLiteral("localToRemoteUrlAccessEnabled")));
     browser_settings.image_loading = toState(config.value(QStringLiteral("loadImages")));
+    browser_settings.javascript = toState(config.value(QStringLiteral("javascriptEnabled")));
+    browser_settings.javascript_open_windows = toState(config.value(QStringLiteral("javascriptOpenWindows")));
+    browser_settings.javascript_close_windows = toState(config.value(QStringLiteral("javascriptCloseWindows")));
+    /// TODO: extend
   }
 }
 }

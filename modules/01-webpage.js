@@ -231,7 +231,9 @@
       javascriptEnabled: true,
       loadImages: true,
       webSecurityEnabled: true,
-      localToRemoteUrlAccessEnabled: false
+      localToRemoteUrlAccessEnabled: false,
+      javascriptOpenWindows: false,
+      javascriptCloseWindows: false
     };
     function addProperty(name, object) {
       Object.defineProperty(object, name, {
