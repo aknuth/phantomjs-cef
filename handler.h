@@ -93,6 +93,13 @@ class PhantomJSHandler : public CefClient,
                                  TerminationStatus status) override;
   bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                       CefRefPtr<CefRequest> request, bool is_redirect) override;
+  CefRequestHandler::ReturnValue OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser,
+                                                      CefRefPtr<CefFrame> frame,
+                                                      CefRefPtr<CefRequest> request,
+                                                      CefRefPtr<CefRequestCallback> callback) override;
+  bool GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, bool isProxy,
+                          const CefString & host, int port, const CefString & realm,
+                          const CefString & scheme, CefRefPtr<CefAuthCallback> callback) override;
 
   // CefMessageRouterBrowserSide::Handler methods:
   bool OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
@@ -108,7 +115,14 @@ private:
   void handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, bool success);
 
   // List of existing browser windows. Only accessed on the CEF UI thread.
-  QHash<int, CefRefPtr<CefBrowser>> m_browsers;
+  struct BrowserInfo
+  {
+    CefRefPtr<CefBrowser> browser;
+    CefString userAgent;
+    CefString authName;
+    CefString authPassword;
+  };
+  QHash<int, BrowserInfo> m_browsers;
 
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
   // NOTE: using QHash prevents a strange ABI issue discussed here: http://www.magpcss.org/ceforum/viewtopic.php?f=6&t=13543

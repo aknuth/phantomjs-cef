@@ -160,7 +160,7 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
 
-  m_browsers[browser->GetIdentifier()] = browser;
+  m_browsers[browser->GetIdentifier()].browser = browser;
 
   qCDebug(handler) << browser->GetIdentifier();
 }
@@ -346,6 +346,34 @@ bool PhantomJSHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<C
   return false;
 }
 
+CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                                   CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
+{
+  const auto& info = m_browsers.value(browser->GetIdentifier());
+  qDebug() << info.userAgent;
+  if (!info.userAgent.empty()) {
+    CefRequest::HeaderMap headers;
+    request->GetHeaderMap(headers);
+    auto it = headers.find("User-Agent");
+    it->second = info.userAgent;
+    request->SetHeaderMap(headers);
+  }
+  return RV_CONTINUE;
+}
+
+bool PhantomJSHandler::GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                          bool isProxy, const CefString& host, int port, const CefString& realm, const CefString& scheme,
+                                          CefRefPtr<CefAuthCallback> callback)
+{
+  const auto& info = m_browsers.value(browser->GetIdentifier());
+  if (info.authName.empty() || info.authPassword.empty()) {
+    return false;
+  }
+  // TODO: this old PhantomJS API is really bad, we should rather delegate that to the script and delay the callback execution
+  callback->Continue(info.authName, info.authPassword);
+  return true;
+}
+
 void PhantomJSHandler::CloseAllBrowsers(bool force_close)
 {
   qCDebug(handler) << force_close;
@@ -360,8 +388,8 @@ void PhantomJSHandler::CloseAllBrowsers(bool force_close)
   }
 
   // iterate over list of values to ensure we really close all browsers
-  foreach (auto browser, m_browsers.values()) {
-    browser->GetHost()->CloseBrowser(force_close);
+  foreach (const auto& info, m_browsers.values()) {
+    info.browser->GetHost()->CloseBrowser(force_close);
   }
 }
 
@@ -383,7 +411,12 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   const auto type = json.value(QStringLiteral("type")).toString();
 
   if (type == QLatin1String("createBrowser")) {
-    auto subBrowser = createBrowser("about:blank", false, json.value(QStringLiteral("settings")).toObject());
+    const auto& settings = json.value(QStringLiteral("settings")).toObject();
+    auto subBrowser = createBrowser("about:blank", false, settings);
+    auto& info = m_browsers[subBrowser->GetIdentifier()];
+    info.authName = settings.value(QStringLiteral("userName")).toString().toStdString();
+    info.authPassword = settings.value(QStringLiteral("password")).toString().toStdString();
+    info.userAgent = settings.value(QStringLiteral("userAgent")).toString().toStdString();
     callback->Success(std::to_string(subBrowser->GetIdentifier()));
     return true;
   } else if (type == QLatin1String("webPageSignals")) {
@@ -410,7 +443,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   }
 
   const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
-  CefRefPtr<CefBrowser> subBrowser = m_browsers.value(subBrowserId);
+  CefRefPtr<CefBrowser> subBrowser = m_browsers.value(subBrowserId).browser;
   if (!subBrowser) {
     qCWarning(handler) << "Unknown browser with id" << subBrowserId << "for request" << json;
     return false;
