@@ -55,7 +55,24 @@ void initWindowInfo(CefWindowInfo& window_info, bool isPhantomMain)
   }
 }
 
-void initBrowserSettings(CefBrowserSettings& browser_settings, bool isPhantomMain)
+cef_state_t toState(const QJsonValue& value)
+{
+  if (value.isBool()) {
+    return value.toBool() ? STATE_ENABLED : STATE_DISABLED;
+  } else if (value.isString()) {
+    const auto stringValue = value.toString();
+    if (!stringValue.compare(QLatin1String("on"), Qt::CaseInsensitive)
+        || stringValue.compare(QLatin1String("yes"), Qt::CaseInsensitive))
+    {
+      return STATE_ENABLED;
+    }
+  }
+
+  return STATE_DEFAULT;
+}
+
+void initBrowserSettings(CefBrowserSettings& browser_settings, bool isPhantomMain,
+                         const QJsonObject& config)
 {
   // TODO: make this configurable
   if (isPhantomMain) {
@@ -63,7 +80,10 @@ void initBrowserSettings(CefBrowserSettings& browser_settings, bool isPhantomMai
     browser_settings.universal_access_from_file_urls = STATE_ENABLED;
     browser_settings.file_access_from_file_urls = STATE_ENABLED;
   } else {
-    browser_settings.javascript_open_windows = STATE_DISABLED;
+    browser_settings.web_security = toState(config.value(QStringLiteral("webSecurityEnabled")));
+    browser_settings.javascript = toState(config.value(QStringLiteral("javascriptEnabled")));
+    browser_settings.universal_access_from_file_urls = toState(config.value(QStringLiteral("localToRemoteUrlAccessEnabled")));
+    browser_settings.image_loading = toState(config.value(QStringLiteral("loadImages")));
   }
 }
 }
@@ -86,13 +106,16 @@ CefMessageRouterConfig PhantomJSHandler::messageRouterConfig()
   return config;
 }
 
-CefRefPtr<CefBrowser> PhantomJSHandler::createBrowser(const CefString& url, bool isPhantomMain)
+CefRefPtr<CefBrowser> PhantomJSHandler::createBrowser(const CefString& url, bool isPhantomMain,
+                                                      const QJsonObject& config)
 {
   CefWindowInfo window_info;
   initWindowInfo(window_info, isPhantomMain);
 
   CefBrowserSettings browser_settings;
-  initBrowserSettings(browser_settings, isPhantomMain);
+  initBrowserSettings(browser_settings, isPhantomMain, config);
+
+  qCDebug(handler) << url << isPhantomMain << config;
 
   return CefBrowserHost::CreateBrowserSync(window_info, this, url, browser_settings,
                                            NULL);
@@ -173,7 +196,7 @@ bool PhantomJSHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<Ce
 {
   qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << target_url << target_frame_name;
   initWindowInfo(windowInfo, false);
-  initBrowserSettings(settings, false);
+  initBrowserSettings(settings, false, {});
   client = this;
   return false;
 }
@@ -357,7 +380,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   const auto type = json.value(QStringLiteral("type")).toString();
 
   if (type == QLatin1String("createBrowser")) {
-    auto subBrowser = createBrowser("about:blank", false);
+    auto subBrowser = createBrowser("about:blank", false, json.value(QStringLiteral("settings")).toObject());
     callback->Success(std::to_string(subBrowser->GetIdentifier()));
     return true;
   } else if (type == QLatin1String("webPageSignals")) {
@@ -416,23 +439,31 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     code = "phantom.internal.handleEvaluateJavaScript(" + code + ", " + args + ", " + QString::number(query_id) + ")";
     subBrowser->GetMainFrame()->ExecuteJavaScript(code.toStdString(), url.toStdString(), line);
     return true;
-  } else if (type == QLatin1String("setViewportSize")) {
-    const auto width = json.value(QStringLiteral("width")).toInt(-1);
-    const auto height = json.value(QStringLiteral("height")).toInt(-1);
-    Q_ASSERT(width >= 0);
-    Q_ASSERT(height >= 0);
-    const auto newSize = qMakePair(width, height);
-    auto& oldSize = m_viewRects[subBrowserId];
-    if (newSize != oldSize) {
-      m_viewRects[subBrowserId] = newSize;
-      subBrowser->GetHost()->WasResized();
+  } else if (type == QLatin1String("setProperty")) {
+    const auto name = json.value(QStringLiteral("name")).toString();
+    const auto value = json.value(QStringLiteral("value"));
+    if (name == QLatin1String("viewportSize")) {
+      const auto width = value.toObject().value(QStringLiteral("width")).toInt(-1);
+      const auto height = value.toObject().value(QStringLiteral("height")).toInt(-1);
+      if (width < 0 || height < 0) {
+        callback->Failure(1, "Invalid viewport size.");
+        return true;
+      } else {
+        const auto newSize = qMakePair(width, height);
+        auto& oldSize = m_viewRects[subBrowserId];
+        if (newSize != oldSize) {
+          m_viewRects[subBrowserId] = newSize;
+          subBrowser->GetHost()->WasResized();
+        }
+      }
+    } else if (name == QLatin1String("zoomFactor")) {
+      const auto value = json.value(QStringLiteral("value")).toDouble(1.);
+      /// TODO: this doesn't seem to work
+      subBrowser->GetHost()->SetZoomLevel(value);
+    } else {
+      callback->Failure(1, "unknown property: " + name.toStdString());
+      return true;
     }
-    callback->Success({});
-    return true;
-  } else if (type == QLatin1String("setZoomFactor")) {
-    const auto value = json.value(QStringLiteral("value")).toDouble(1.);
-    /// TODO: this doesn't seem to work
-    subBrowser->GetHost()->SetZoomLevel(value);
     callback->Success({});
     return true;
   } else if (type == QLatin1String("renderImage")) {

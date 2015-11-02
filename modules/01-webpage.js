@@ -26,29 +26,46 @@
 */
 
 (function() {
-  function setupWebPageSignals(webpage) {
-    startPhantomJsQuery({
-      request: JSON.stringify({
-        type: 'webPageSignals',
-        browser: webpage.id
-      }),
-      persistent: true,
-      onSuccess: function(response) {
-        var response = JSON.parse(response);
-        webpage[response.signal].apply(webpage, response.args);
-      },
-      onFailure: function() {}
-    });
-  }
-
   phantom.WebPage = function() {
     var webpage = this;
-    this.id = null;
-    var createBrowser = phantom.internal.query({type: "createBrowser"})
-      .then(function(response) {
-        webpage.id = parseInt(response);
-        setupWebPageSignals(webpage);
-      });
+    var internal = {
+      viewportSize: {width: 800, height: 600},
+      zoomFactor: 1.,
+      createBrowser: null,
+      id: null
+    };
+    function verifyBrowserCreated() {
+      if (!internal.id) {
+        throw new Error("No page has been loaded. The function " + verifyBrowserCreated.caller + " must be called after the first page load event.");
+      }
+    }
+    function createBrowser() {
+      if (!internal.createBrowser) {
+        internal.createBrowser = phantom.internal.query({
+          type: "createBrowser",
+          settings: webpage.settings
+        })
+        .then(function(response) {
+          internal.id = parseInt(response);
+          // send current values of some properties
+          webpage.viewportSize = internal.viewportSize;
+          webpage.zoomFactor = internal.zoomFactor;
+          startPhantomJsQuery({
+            request: JSON.stringify({
+              type: 'webPageSignals',
+              browser: internal.id
+            }),
+            persistent: true,
+            onSuccess: function(response) {
+              var response = JSON.parse(response);
+              webpage[response.signal].apply(webpage, response.args);
+            },
+            onFailure: function() {}
+          });
+        });
+      }
+      return internal.createBrowser;
+    }
 
     this.onConsoleMessage = function(message, source, line) {
       native function printError();
@@ -57,11 +74,11 @@
     this.onLoadStarted = function() {};
     this.onLoadFinished = function(status) {};
     this.open = function(url, callback) {
-      var ret = createBrowser.then(function() {
+      var ret = createBrowser().then(function() {
         return phantom.internal.query({
           type: "openWebPage",
           url: url,
-          browser: webpage.id})
+          browser: internal.id})
       });
       if (typeof(callback) === "function") {
         // backwards compatibility when callback is given
@@ -79,43 +96,42 @@
       return ret;
     };
     this.waitForLoaded = function() {
-      return createBrowser.then(function() {
-        return phantom.internal.query({
-          type: "waitForLoaded",
-          browser: webpage.id
-        });
+      verifyBrowserCreated();
+      return phantom.internal.query({
+        type: "waitForLoaded",
+        browser: internal.id
       });
     };
     this.stop = function() {
-      return createBrowser.then(function() {
-        return phantom.internal.query({type: "stopWebPage", browser: webpage.id});
-      });
+      verifyBrowserCreated();
+      return phantom.internal.query({type: "stopWebPage", browser: internal.id});
     };
     this.close = function() {
-      if (webpage.id === null) {
+      if (internal.id === null) {
         return;
       }
       startPhantomJsQuery({
         request: JSON.stringify({
           type: 'closeWebPage',
-          browser: webpage.id
+          browser: internal.id
         }),
         persistent: false,
         onSuccess: function() {},
         onFailure: function() {}
       });
-      webpage.id = null;
+      internal.id = null;
     };
     this.evaluate = function(code) {
       arguments[0] = String(arguments[0]);
       return webpage.evaluateJavaScript.apply(webpage, arguments);
     };
     this.evaluateJavaScript = function(code) {
+      verifyBrowserCreated();
       /*
        * this is pretty convoluted due to the multi-process architecture
        *
        * we send this query to the handler, i.e. browser process
-       * this then finds the browser for the webpage.id and executes
+       * this then finds the browser for the internal.id and executes
        * the script there via phantom.internal.handleEvaluateJavaScript.
        * this in turn sends the return value or exception back to the handler
        * which then triggers the callback for this query...
@@ -131,7 +147,7 @@
           type: "evaluateJavaScript",
           code: code,
           args: args,
-          browser: webpage.id
+          browser: internal.id
       }).then(function(retval) {
         if (retval && typeof(retval) === "string") {
           retval = JSON.parse(retval);
@@ -150,31 +166,34 @@
       console.log(error);
     };
     this.render = function(path) {
+      verifyBrowserCreated();
       if (path.endsWith("pdf")) {
         return phantom.internal.query({
           type: 'printPdf',
           path: path,
           paperSize: webpage.paperSize,
-          browser: webpage.id
+          browser: internal.id
         });
       } else {
         return phantom.internal.query({
           type: 'renderImage',
           path: path,
           clipRect: webpage.clipRect,
-          browser: webpage.id
+          browser: internal.id
         });
       }
     };
     this.renderBase64 = function(format) {
+      verifyBrowserCreated();
       return phantom.internal.query({
         type: 'renderImage',
         format: format,
         clipRect: webpage.clipRect,
-        browser: webpage.id
+        browser: internal.id
       });
     };
     this.injectJs = function(file) {
+      verifyBrowserCreated();
       var path = phantom.internal.findLibrary(file, webpage.libraryPath);
       if (!path) {
         return new Promise(function(resolve, reject) { reject(Error("Could not find file to inject: " + file)); });
@@ -188,7 +207,7 @@
         code: "function() {\n" + code + "\n}", // wrap in function so the code can be called
         url: "file://" + path, // file:// is required for proper console.log messages
         line: 0, // we prepend one line, so start at line 1
-        browser: webpage.id
+        browser: internal.id
       }).then(function(retval) {
         if (retval && typeof(retval) === "string") {
           retval = JSON.parse(retval);
@@ -208,51 +227,42 @@
       width: -1,
       height: -1,
     };
-    var internal = {
-      // keep in sync with defaults in handler.cpp
-      viewportSize: {width: 800, height: 600},
-      zoomFactor: 1
+    this.settings = {
+      javascriptEnabled: true,
+      loadImages: true,
+      webSecurityEnabled: true,
+      localToRemoteUrlAccessEnabled: false
     };
-    Object.defineProperty(this, "viewportSize", {
-      get: function() {
-        return internal.viewportSize;
-      },
-      set: function(value) {
-        if (!value.hasOwnProperty("width") || value.width < 0 || !value.hasOwnProperty("height") || value.height < 0) {
-          throw Error("Bad viewport size: " + JSON.stringify(value));
-        }
-        internal.viewportSize = value;
-        createBrowser.then(function() {
-          return phantom.internal.query({
-            type: "setViewportSize",
-            width: value.width,
-            height: value.height,
-            browser: webpage.id
+    function addProperty(name, object) {
+      Object.defineProperty(object, name, {
+        get: function() {
+          return internal[name];
+        },
+        set: function(value) {
+          internal[name] = value;
+          if (!internal.createBrowser) {
+            // delay until page gets created
+            return;
+          }
+          internal.createBrowser.then(function() {
+            return phantom.internal.query({
+              type: "setProperty",
+              name: name,
+              value: value,
+              browser: internal.id
+            });
           });
-        });
-      },
-      configurable: false
-    });
-    Object.defineProperty(this, "zoomFactor", {
-      get: function() {
-        return internal.zoomFactor;
-      },
-      set: function(value) {
-        internal.zoomFactor = value;
-        createBrowser.then(function() {
-          return phantom.internal.query({
-            type: "setZoomFactor",
-            value: value,
-            browser: webpage.id
-          });
-        });
-      },
-      configurable: false
-    });
+        },
+        configurable: false
+      });
+    }
+    addProperty("viewportSize", webpage);
+    addProperty("zoomFactor", webpage);
     // TODO: cleanup this api?
     //       i.e. a key event and a mouse event function
     //       or take an object of args
     this.sendEvent = function(type, arg1, arg2, arg3, modifier) {
+      verifyBrowserCreated();
       return phantom.internal.query({
         type: "sendEvent",
         event: type,
@@ -260,7 +270,7 @@
         arg2: arg2,
         arg3: arg3,
         modifier: modifier,
-        browser: webpage.id
+        browser: internal.id
       });
     };
     this.event = {

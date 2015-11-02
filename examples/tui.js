@@ -60,7 +60,7 @@ page.open('http://www.tuifly.com/de/index.html')
         return page.render('tui.png');
     })
     .then(function() {
-        console.log("Success! Have a look at tui.pdf");
+        console.log("Success! Have a look at tui.png");
     }, function (error) {
         console.log("script failed :(" + (error.stack ? error.stack : error));
     })

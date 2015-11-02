@@ -11,6 +11,7 @@
 #include <vector>
 #include <QHash>
 #include <QRect>
+#include <QJsonObject>
 
 class PhantomJSHandler : public CefClient,
                       public CefDisplayHandler,
@@ -27,7 +28,8 @@ class PhantomJSHandler : public CefClient,
   // Provide access to the single global instance of this object.
   static CefMessageRouterConfig messageRouterConfig();
 
-  CefRefPtr<CefBrowser> createBrowser(const CefString& url, bool isPhantomMain);
+  CefRefPtr<CefBrowser> createBrowser(const CefString& url, bool isPhantomMain,
+                                      const QJsonObject& config = {});
 
   // CefClient methods:
   virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() override
