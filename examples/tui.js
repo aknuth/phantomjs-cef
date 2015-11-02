@@ -57,9 +57,7 @@ page.open('http://www.tuifly.com/de/index.html')
         return page.waitForLoaded();
     })
     .then(function() {
-        // TODO: make it possible to render to png
-//         return page.render('tui.png');
-        return page.render("tui.pdf");
+        return page.render('tui.png');
     })
     .then(function() {
         console.log("Success! Have a look at tui.pdf");
