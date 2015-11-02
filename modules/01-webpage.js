@@ -148,7 +148,7 @@
     // can be assigned by the user
     this.onError = function(error) {
       console.log(error);
-    }
+    };
     this.render = function(path) {
       return phantom.internal.query({
         type: 'renderPage',
@@ -156,7 +156,7 @@
         paperSize: webpage.paperSize,
         browser: webpage.id
       });
-    }
+    };
     this.injectJs = function(file) {
       var path = phantom.internal.findLibrary(file, webpage.libraryPath);
       if (!path) {
@@ -178,7 +178,7 @@
         }
         return retval;
       });
-    }
+    };
     this.libraryPath = phantom.libraryPath;
     this.paperSize = {
       format: "A4",
