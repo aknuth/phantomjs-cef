@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 #include <QGuiApplication>
+#include <QStandardPaths>
 
 #include "app.h"
 
@@ -45,7 +46,11 @@ int main(int argc, char* argv[])
   settings.remote_debugging_port = 12345;
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
-//   settings.log_severity = LOGSEVERITY_VERBOSE;
+
+  const auto cachePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+  cef_string_set(cachePath.utf16(), cachePath.size(), &settings.cache_path, 1);
+
+  //   settings.log_severity = LOGSEVERITY_VERBOSE;
 
   // Initialize CEF for the browser process.
   CefInitialize(main_args, settings, app, NULL);
