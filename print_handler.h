@@ -9,6 +9,13 @@
 
 #include "include/cef_version.h"
 
+class QPageSize;
+class QString;
+
+QPageSize pageSizeForName(const QString& name);
+float stringToPointSize(const QString& string);
+int stringToMillimeter(const QString& string);
+
 template<typename Handler>
 class PdfPrintCallback : public CefPdfPrintCallback
 {
@@ -36,7 +43,7 @@ CefRefPtr<PdfPrintCallback<Handler>> makePdfPrintCallback(Handler handler)
 
 class PrintHandler : public CefPrintHandler
 {
- public:
+public:
   // CefPrintHandler methods:
   virtual CefSize GetPdfPaperSize(int device_units_per_inch) override;
   virtual bool OnPrintDialog(bool has_selection, CefRefPtr<CefPrintDialogCallback> callback) override;
@@ -48,7 +55,7 @@ class PrintHandler : public CefPrintHandler
   virtual void OnPrintStart(CefRefPtr<CefBrowser> browser) override;
 #endif
 
- private:
+private:
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PrintHandler);
 };

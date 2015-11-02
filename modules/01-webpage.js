@@ -153,8 +153,7 @@
       return phantom.internal.query({
         type: 'renderPage',
         path: path,
-        width: webpage.viewportSize.width,
-        height: webpage.viewportSize.height,
+        paperSize: webpage.paperSize,
         browser: webpage.id
       });
     }
@@ -181,6 +180,11 @@
       });
     }
     this.libraryPath = phantom.libraryPath;
+    this.paperSize = {
+      format: "A4",
+      margin: "default",
+      orientation: "portrait"
+    };
     var internal = {
       // keep in sync with defaults in handler.cpp
       viewportSize: {width: 800, height: 600},

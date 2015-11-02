@@ -13,6 +13,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QPageSize>
+#include <QRect>
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
@@ -387,7 +389,51 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     return true;
   } else if (type == QLatin1String("renderPage")) {
     const auto path = json.value(QStringLiteral("path")).toString().toStdString();
-    subBrowser->GetHost()->PrintToPDF(path, {}, makePdfPrintCallback([callback] (const CefString& path, bool success) {
+    CefPdfPrintSettings settings;
+    const auto paperSize = json.value(QStringLiteral("paperSize")).toObject();
+    if (!paperSize.value(QStringLiteral("orientation")).toString().compare("landscape", Qt::CaseInsensitive)) {
+      settings.landscape = true;
+    }
+    QPageSize pageSize;
+    if (paperSize.contains(QStringLiteral("format"))) {
+      pageSize = pageSizeForName(paperSize.value(QStringLiteral("format")).toString());
+    } else if (paperSize.contains(QStringLiteral("width")) && paperSize.contains(QStringLiteral("height"))) {
+      auto width = stringToPointSize(paperSize.value(QStringLiteral("width")).toString());
+      auto height = stringToPointSize(paperSize.value(QStringLiteral("height")).toString());
+      pageSize = QPageSize(QSize(width, height), QPageSize::Point);
+    }
+    auto rect = pageSize.rect(QPageSize::Millimeter);
+    settings.page_height = rect.height() * 1000;
+    settings.page_width = rect.width() * 1000;
+
+    const auto margin = paperSize.value(QStringLiteral("margin"));
+    if (margin.isString()) {
+      const auto marginString = margin.toString();
+      if (marginString == QLatin1String("default")) {
+        settings.margin_type = PDF_PRINT_MARGIN_DEFAULT;
+      } else if (marginString == QLatin1String("minimum")) {
+        settings.margin_type = PDF_PRINT_MARGIN_MINIMUM;
+      } else if (marginString == QLatin1String("none")) {
+        settings.margin_type = PDF_PRINT_MARGIN_NONE;
+      } else {
+        settings.margin_type = PDF_PRINT_MARGIN_CUSTOM;
+        int intMargin = stringToMillimeter(marginString);
+        settings.margin_left = intMargin;
+        settings.margin_top = intMargin;
+        settings.margin_right = intMargin;
+        settings.margin_bottom = intMargin;
+      }
+    } else if (margin.isObject()) {
+      auto marginObject = margin.toObject();
+      settings.margin_type = PDF_PRINT_MARGIN_CUSTOM;
+      settings.margin_left = stringToMillimeter(marginObject.value(QStringLiteral("left")).toString());
+      settings.margin_top = stringToMillimeter(marginObject.value(QStringLiteral("top")).toString());
+      settings.margin_right = stringToMillimeter(marginObject.value(QStringLiteral("right")).toString());
+      settings.margin_bottom = stringToMillimeter(marginObject.value(QStringLiteral("bottom")).toString());
+    }
+    qCDebug(print) << paperSize << pageSize.name() << settings.page_height << settings.page_width << "landscape:" << settings.landscape
+                    << "margins:"<< settings.margin_bottom << settings.margin_left << settings.margin_top << settings.margin_right << "margin type:" << settings.margin_type;
+    subBrowser->GetHost()->PrintToPDF(path, settings, makePdfPrintCallback([callback] (const CefString& path, bool success) {
       if (success) {
         callback->Success(path);
       } else {
