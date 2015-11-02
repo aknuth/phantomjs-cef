@@ -150,12 +150,21 @@
       console.log(error);
     };
     this.render = function(path) {
-      return phantom.internal.query({
-        type: 'renderPage',
-        path: path,
-        paperSize: webpage.paperSize,
-        browser: webpage.id
-      });
+      if (path.endsWith("pdf")) {
+        return phantom.internal.query({
+          type: 'printPdf',
+          path: path,
+          paperSize: webpage.paperSize,
+          browser: webpage.id
+        });
+      } else {
+        return phantom.internal.query({
+          type: 'renderImage',
+          path: path,
+          clipRect: webpage.clipRect,
+          browser: webpage.id
+        });
+      }
     };
     this.injectJs = function(file) {
       var path = phantom.internal.findLibrary(file, webpage.libraryPath);
@@ -185,9 +194,16 @@
       margin: "default",
       orientation: "portrait"
     };
+    this.clipRect = {
+      top: 0,
+      left: 0,
+      width: -1,
+      height: -1,
+    };
     var internal = {
       // keep in sync with defaults in handler.cpp
       viewportSize: {width: 800, height: 600},
+      zoomFactor: 1
     };
     Object.defineProperty(this, "viewportSize", {
       get: function() {
@@ -203,6 +219,22 @@
             type: "setViewportSize",
             width: value.width,
             height: value.height,
+            browser: webpage.id
+          });
+        });
+      },
+      configurable: false
+    });
+    Object.defineProperty(this, "zoomFactor", {
+      get: function() {
+        return internal.zoomFactor;
+      },
+      set: function(value) {
+        internal.zoomFactor = value;
+        createBrowser.then(function() {
+          return phantom.internal.query({
+            type: "setZoomFactor",
+            value: value,
             browser: webpage.id
           });
         });

@@ -113,6 +113,12 @@ private:
   QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_browserSignals;
   QHash<int64, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingQueryCallbacks;
   QHash<int32, QPair<int, int>> m_viewRects;
+  struct PaintInfo
+  {
+    QString path;
+    CefRefPtr<CefMessageRouterBrowserSide::Callback> callback;
+  };
+  QHash<int32, PaintInfo> m_paintCallbacks;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);

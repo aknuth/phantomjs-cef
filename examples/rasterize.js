@@ -28,17 +28,16 @@ if (system.args.length > 3 && system.args[2].substr(-4) === ".pdf") {
         // TODO:
         page.clipRect = { top: 0, left: 0, width: pageWidth, height: pageHeight };
     } else {
-        console.log("size:", system.args[3]);
+        console.log("size:" + system.args[3]);
         var pageWidth = parseInt(system.args[3], 10);
         var pageHeight = parseInt(pageWidth * 3/4, 10); // it's as good an assumption as any
-        console.log ("pageHeight:",pageHeight);
+        console.log ("pageHeight:" + pageHeight);
         page.viewportSize = { width: pageWidth, height: pageHeight };
     }
 }
 
 if (system.args.length > 4) {
-    // TODO
-    page.zoomFactor = system.args[4];
+    page.zoomFactor = parseInt(system.args[4]);
 }
 
 page.open(address)

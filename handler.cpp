@@ -15,6 +15,7 @@
 #include <QJsonArray>
 #include <QPageSize>
 #include <QRect>
+#include <QImage>
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
@@ -28,8 +29,8 @@
 #include "keyevents.h"
 
 namespace {
-CefRefPtr<CefMessageRouterBrowserSide::Callback> takeCallback(QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>>* callbacks,
-                                                              const CefRefPtr<CefBrowser>& browser)
+template<typename T>
+T takeCallback(QHash<int32, T>* callbacks, const CefRefPtr<CefBrowser>& browser)
 {
   auto it = callbacks->find(browser->GetIdentifier());
   if (it != callbacks->end()) {
@@ -263,8 +264,20 @@ bool PhantomJSHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 
 void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height)
 {
-  // TODO: grab screenshots?
-  // do nothing
+  qDebug() << type << dirtyRects.size() << width << height;
+  for (auto&& rect : dirtyRects) {
+    qDebug() << "dirty rect:" << rect.x << rect.y << rect.width << rect.height;
+  }
+  auto info = takeCallback(&m_paintCallbacks, browser);
+  if (info.callback) {
+    QImage image(reinterpret_cast<const uchar*>(buffer), width, height, QImage::Format_ARGB32);
+    // TODO: clipRect
+    if (image.save(info.path)) {
+      info.callback->Success({});
+    } else {
+      info.callback->Failure(1, QStringLiteral("Failed to render page to \"%1\".").arg(info.path).toStdString());
+    }
+  }
 }
 
 void PhantomJSHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status)
@@ -387,7 +400,18 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     }
     callback->Success({});
     return true;
-  } else if (type == QLatin1String("renderPage")) {
+  } else if (type == QLatin1String("setZoomFactor")) {
+    const auto value = json.value(QStringLiteral("value")).toDouble(1.);
+    /// TODO: this doesn't seem to work
+    subBrowser->GetHost()->SetZoomLevel(value);
+    callback->Success({});
+    return true;
+  } else if (type == QLatin1String("renderImage")) {
+    const auto path = json.value(QStringLiteral("path")).toString();
+    m_paintCallbacks[subBrowserId] = {path, callback};
+    subBrowser->GetHost()->Invalidate(PET_VIEW);
+    return true;
+  } else if (type == QLatin1String("printPdf")) {
     const auto path = json.value(QStringLiteral("path")).toString().toStdString();
     CefPdfPrintSettings settings;
     const auto paperSize = json.value(QStringLiteral("paperSize")).toObject();
@@ -524,4 +548,5 @@ void PhantomJSHandler::OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<
   m_waitForLoadedCallbacks.remove(browser->GetIdentifier());
   m_pendingQueryCallbacks.remove(query_id);
   m_browserSignals.remove(browser->GetIdentifier());
+  m_paintCallbacks.remove(browser->GetIdentifier());
 }
