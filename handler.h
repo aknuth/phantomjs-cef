@@ -116,6 +116,7 @@ private:
   struct PaintInfo
   {
     QString path;
+    QString format;
     CefRefPtr<CefMessageRouterBrowserSide::Callback> callback;
   };
   QHash<int32, PaintInfo> m_paintCallbacks;

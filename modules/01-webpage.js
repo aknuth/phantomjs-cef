@@ -166,6 +166,14 @@
         });
       }
     };
+    this.renderBase64 = function(format) {
+      return phantom.internal.query({
+        type: 'renderImage',
+        format: format,
+        clipRect: webpage.clipRect,
+        browser: webpage.id
+      });
+    };
     this.injectJs = function(file) {
       var path = phantom.internal.findLibrary(file, webpage.libraryPath);
       if (!path) {

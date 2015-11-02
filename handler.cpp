@@ -16,6 +16,8 @@
 #include <QPageSize>
 #include <QRect>
 #include <QImage>
+#include <QBuffer>
+#include <QImageWriter>
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
@@ -272,10 +274,33 @@ void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType t
   if (info.callback) {
     QImage image(reinterpret_cast<const uchar*>(buffer), width, height, QImage::Format_ARGB32);
     // TODO: clipRect
-    if (image.save(info.path)) {
-      info.callback->Success({});
+    if (info.format.isEmpty()) {
+      if (image.save(info.path)) {
+        info.callback->Success({});
+      } else {
+        info.callback->Failure(1, QStringLiteral("Failed to render page to \"%1\".").arg(info.path).toStdString());
+      }
     } else {
-      info.callback->Failure(1, QStringLiteral("Failed to render page to \"%1\".").arg(info.path).toStdString());
+      QByteArray ba;
+      QBuffer buffer(&ba);
+      buffer.open(QIODevice::WriteOnly);
+      if (image.save(&buffer, info.format.toUtf8().constData())) {
+        const auto data = ba.toBase64();
+        info.callback->Success(std::string(data.constData(), data.size()));
+      } else {
+        std::string error = "Failed to render page into Base64 encoded buffer of format \"";
+        error += qPrintable(info.format);
+        error += "\". Available formats are: ";
+        bool first = true;
+        foreach (const auto& format, QImageWriter::supportedImageFormats()) {
+          if (!first) {
+            error += ", ";
+          }
+          error += std::string(format);
+          first = false;
+        }
+        info.callback->Failure(1, error);
+      }
     }
   }
 }
@@ -408,7 +433,8 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     return true;
   } else if (type == QLatin1String("renderImage")) {
     const auto path = json.value(QStringLiteral("path")).toString();
-    m_paintCallbacks[subBrowserId] = {path, callback};
+    const auto format = json.value(QStringLiteral("format")).toString();
+    m_paintCallbacks[subBrowserId] = {path, format, callback};
     subBrowser->GetHost()->Invalidate(PET_VIEW);
     return true;
   } else if (type == QLatin1String("printPdf")) {
