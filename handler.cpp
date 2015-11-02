@@ -62,6 +62,8 @@ void initBrowserSettings(CefBrowserSettings& browser_settings, bool isPhantomMai
     browser_settings.web_security = STATE_DISABLED;
     browser_settings.universal_access_from_file_urls = STATE_ENABLED;
     browser_settings.file_access_from_file_urls = STATE_ENABLED;
+  } else {
+    browser_settings.javascript_open_windows = STATE_DISABLED;
   }
 }
 }
