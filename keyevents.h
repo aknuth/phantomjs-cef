@@ -7,8 +7,8 @@
 
 #if OS_LINUX
 #include "keyevents_linux.h"
-#elif OS_WINDOWS
-#include "keyevents_windows.h"
+#elif OS_WIN
+#include "keyevents_win.h"
 #endif
 
 #endif

@@ -178,18 +178,25 @@ QPrinter::PaperSize paperSizeForName(const QString& name)
   return QPrinter::A4;
 }
 
-#define PHANTOMJS_PDF_DPI 72.0
+#define PHANTOMJS_PDF_DPI 72.0f
+
+struct UnitConversion
+{
+    UnitConversion(const QLatin1String& unit, float factor)
+        : unit(unit)
+        , factor(factor)
+    {}
+    QLatin1String unit;
+    float factor;
+};
 
 float stringToPointSize(const QString& string)
 {
-  static const struct {
-    QLatin1String unit;
-    float factor;
-  } units[] = {
-    { QLatin1String("mm"), 72.0 / 25.4 },
-    { QLatin1String("cm"), 72.0 / 2.54 },
-    { QLatin1String("in"), 72.0 },
-    { QLatin1String("px"), 72.0 / PHANTOMJS_PDF_DPI },
+  static const UnitConversion units[] = {
+    { QLatin1String("mm"), 72.0f / 25.4f },
+    { QLatin1String("cm"), 72.0f / 2.54f },
+    { QLatin1String("in"), 72.0f },
+    { QLatin1String("px"), 72.0f / PHANTOMJS_PDF_DPI },
   };
 
   for (uint i = 0; i < sizeof(units) / sizeof(units[0]); ++i) {
@@ -203,7 +210,7 @@ float stringToPointSize(const QString& string)
 
 int stringToMillimeter(const QString& string)
 {
-  return round(stringToPointSize(string) / PHANTOMJS_PDF_DPI * 25.4);
+  return round(stringToPointSize(string) / PHANTOMJS_PDF_DPI * 25.4f);
 }
 
 CefSize PrintHandler::GetPdfPaperSize(int device_units_per_inch)
