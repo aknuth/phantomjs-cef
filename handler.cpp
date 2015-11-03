@@ -294,10 +294,7 @@ bool PhantomJSHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 
 void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height)
 {
-  qDebug() << type << dirtyRects.size() << width << height;
-  for (auto&& rect : dirtyRects) {
-    qDebug() << "dirty rect:" << rect.x << rect.y << rect.width << rect.height;
-  }
+  qCDebug(handler) << browser->GetIdentifier() << type << width << height;
   auto info = takeCallback(&m_paintCallbacks, browser);
   if (info.callback) {
     QImage image(reinterpret_cast<const uchar*>(buffer), width, height, QImage::Format_ARGB32);
@@ -350,7 +347,6 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
                                                    CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
 {
   const auto& info = m_browsers.value(browser->GetIdentifier());
-  qDebug() << info.userAgent;
   if (!info.userAgent.empty()) {
     CefRequest::HeaderMap headers;
     request->GetHeaderMap(headers);
