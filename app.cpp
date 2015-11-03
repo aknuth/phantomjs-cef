@@ -107,7 +107,8 @@ std::string readFile(const std::string& filePath)
   in.seekg(0, std::ios::end);
   contents.resize(in.tellg());
   in.seekg(0, std::ios::beg);
-  in.read(&contents[0], contents.size());
+  contents.assign(std::istreambuf_iterator<char>(in),
+                  std::istreambuf_iterator<char>());
   return contents;
 }
 
