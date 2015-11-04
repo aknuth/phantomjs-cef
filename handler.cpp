@@ -149,13 +149,14 @@ bool PhantomJSHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const Cef
 {
   auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback;
   if (callback) {
-    QJsonObject obj;
-    obj[QStringLiteral("signal")] = QStringLiteral("onConsoleMessage");
-    QJsonArray args;
-    args.append(QString::fromStdString(message));
-    args.append(QString::fromStdString(source));
-    args.append(line);
-    obj[QStringLiteral("args")] = args;
+    const QJsonObject obj = {
+      {QStringLiteral("signal"), QStringLiteral("onConsoleMessage")},
+      {QStringLiteral("args"), QJsonArray{
+        QString::fromStdString(message),
+        QString::fromStdString(source),
+        line
+      }}
+    };
     callback->Success(QJsonDocument(obj).toJson().constData());
   } else {
     std::cerr << source << ':' << line << ": " << message << '\n';
@@ -358,27 +359,30 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
     return RV_CONTINUE;
   }
 
-  QJsonObject jsonRequest;
-  jsonRequest[QStringLiteral("url")] = QString::fromStdString(request->GetURL().ToString());
-  jsonRequest[QStringLiteral("flags")] = request->GetFlags();
-  jsonRequest[QStringLiteral("resourceType")] = static_cast<int>(request->GetResourceType());
-  jsonRequest[QStringLiteral("transitionType")] = static_cast<int>(request->GetTransitionType());
   QJsonObject jsonHeaders;
-  CefRequest::HeaderMap headers;
-  request->GetHeaderMap(headers);
-  for (const auto& header : headers) {
-    jsonHeaders[QString::fromStdString(header.first)] = QString::fromStdString(header.second);
+  {
+    CefRequest::HeaderMap headers;
+    request->GetHeaderMap(headers);
+    for (const auto& header : headers) {
+      jsonHeaders[QString::fromStdString(header.first)] = QString::fromStdString(header.second);
+    }
   }
-  jsonRequest[QStringLiteral("headers")] = jsonHeaders;
-  // TODO: POST data
+
+  const QJsonObject jsonRequest = {
+    {QStringLiteral("headers"), jsonHeaders},
+    {QStringLiteral("url"), QString::fromStdString(request->GetURL().ToString())},
+    {QStringLiteral("flags"), request->GetFlags()},
+    {QStringLiteral("resourceType"), static_cast<int>(request->GetResourceType())},
+    {QStringLiteral("transitionType"), static_cast<int>(request->GetTransitionType())},
+  };
+
   m_requestCallbacks[request->GetIdentifier()] = {request, callback};
-  QJsonArray args;
-  args.append(jsonRequest);
-  args.append(QString::number(request->GetIdentifier()));
-  QJsonObject data;
-  data[QStringLiteral("signal")] = QStringLiteral("beforeResourceLoad");
-  data[QStringLiteral("args")] = args;
-  data[QStringLiteral("internal")] = true;
+
+  const QJsonObject data = {
+    {QStringLiteral("signal"), QStringLiteral("beforeResourceLoad")},
+    {QStringLiteral("args"), QJsonArray{jsonRequest, QString::number(request->GetIdentifier())}},
+    {QStringLiteral("internal"), true},
+  };
   signalCallback->Success(QJsonDocument(data).toJson().constData());
   return RV_CONTINUE_ASYNC;
 }
