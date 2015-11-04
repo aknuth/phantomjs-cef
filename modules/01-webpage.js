@@ -32,7 +32,32 @@
       viewportSize: {width: 800, height: 600},
       zoomFactor: 1.,
       createBrowser: null,
-      id: null
+      id: null,
+      beforeResourceLoad: function(request, requestId) {
+        if (typeof(webpage.settings.userAgent) === "string") {
+          request.headers["User-Agent"] = webpage.settings.userAgent;
+        }
+        // TODO request.time
+        var allow = true;
+        var networkRequest = {
+          abort: function() {
+            allow = false;
+          },
+          changeUrl: function(url) {
+            request.url = url;
+          },
+          setHeader: function(key, value) {
+            request.headers[key] = value;
+          }
+        };
+        webpage.onResourceRequested(request, networkRequest);
+        phantom.internal.query({
+          type: "beforeResourceLoadResponse",
+          requestId: requestId,
+          request: request,
+          allow: allow
+        });
+      }
     };
     function verifyBrowserCreated() {
       if (!internal.id) {
@@ -58,7 +83,8 @@
             persistent: true,
             onSuccess: function(response) {
               var response = JSON.parse(response);
-              webpage[response.signal].apply(webpage, response.args);
+              var target = response.internal ? internal : webpage;
+              target[response.signal].apply(webpage, response.args);
             },
             onFailure: function() {}
           });
@@ -73,6 +99,7 @@
     };
     this.onLoadStarted = function() {};
     this.onLoadFinished = function(status) {};
+    this.onResourceRequested = function(requestData, networkRequest) {};
     this.open = function(url, callback) {
       var ret = createBrowser().then(function() {
         return phantom.internal.query({
@@ -233,7 +260,10 @@
       webSecurityEnabled: true,
       localToRemoteUrlAccessEnabled: false,
       javascriptOpenWindows: false,
-      javascriptCloseWindows: false
+      javascriptCloseWindows: false,
+      userAgent: null,
+      userName: null,
+      password: null,
     };
     function addProperty(name, object) {
       Object.defineProperty(object, name, {

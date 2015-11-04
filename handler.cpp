@@ -31,16 +31,23 @@
 #include "keyevents.h"
 
 namespace {
-template<typename T>
-T takeCallback(QHash<int32, T>* callbacks, const CefRefPtr<CefBrowser>& browser)
+
+template<typename T, typename K>
+T takeCallback(QHash<K, T>* callbacks, K key)
 {
-  auto it = callbacks->find(browser->GetIdentifier());
+  auto it = callbacks->find(key);
   if (it != callbacks->end()) {
     auto ret = it.value();
     callbacks->erase(it);
     return ret;
   }
   return {};
+}
+
+template<typename T>
+T takeCallback(QHash<int32, T>* callbacks, const CefRefPtr<CefBrowser>& browser)
+{
+  return takeCallback(callbacks, browser->GetIdentifier());
 }
 
 void initWindowInfo(CefWindowInfo& window_info, bool isPhantomMain)
@@ -140,7 +147,7 @@ bool PhantomJSHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 
 bool PhantomJSHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
 {
-  auto callback = m_browserSignals.value(browser->GetIdentifier());
+  auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback;
   if (callback) {
     QJsonObject obj;
     obj[QStringLiteral("signal")] = QStringLiteral("onConsoleMessage");
@@ -242,7 +249,7 @@ void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
     return;
   }
 
-  auto callback = m_browserSignals.value(browser->GetIdentifier());
+  auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback;
   if (!callback) {
     return;
   }
@@ -275,7 +282,7 @@ void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCo
     }
   }
 
-  if (auto callback = m_browserSignals.value(browser->GetIdentifier())) {
+  if (auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
     if (success) {
       callback->Success("{\"signal\":\"onLoadFinished\",\"args\":[\"success\"]}");
     } else {
@@ -346,15 +353,34 @@ bool PhantomJSHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<C
 CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                    CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
 {
-  const auto& info = m_browsers.value(browser->GetIdentifier());
-  if (!info.userAgent.empty()) {
-    CefRequest::HeaderMap headers;
-    request->GetHeaderMap(headers);
-    auto it = headers.find("User-Agent");
-    it->second = info.userAgent;
-    request->SetHeaderMap(headers);
+  auto signalCallback = m_browsers.value(browser->GetIdentifier()).signalCallback;
+  if (!signalCallback) {
+    return RV_CONTINUE;
   }
-  return RV_CONTINUE;
+
+  QJsonObject jsonRequest;
+  jsonRequest[QStringLiteral("url")] = QString::fromStdString(request->GetURL().ToString());
+  jsonRequest[QStringLiteral("flags")] = request->GetFlags();
+  jsonRequest[QStringLiteral("resourceType")] = static_cast<int>(request->GetResourceType());
+  jsonRequest[QStringLiteral("transitionType")] = static_cast<int>(request->GetTransitionType());
+  QJsonObject jsonHeaders;
+  CefRequest::HeaderMap headers;
+  request->GetHeaderMap(headers);
+  for (const auto& header : headers) {
+    jsonHeaders[QString::fromStdString(header.first)] = QString::fromStdString(header.second);
+  }
+  jsonRequest[QStringLiteral("headers")] = jsonHeaders;
+  // TODO: POST data
+  m_requestCallbacks[request->GetIdentifier()] = {request, callback};
+  QJsonArray args;
+  args.append(jsonRequest);
+  args.append(QString::number(request->GetIdentifier()));
+  QJsonObject data;
+  data[QStringLiteral("signal")] = QStringLiteral("beforeResourceLoad");
+  data[QStringLiteral("args")] = args;
+  data[QStringLiteral("internal")] = true;
+  signalCallback->Success(QJsonDocument(data).toJson().constData());
+  return RV_CONTINUE_ASYNC;
 }
 
 bool PhantomJSHandler::GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
@@ -412,13 +438,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     auto& info = m_browsers[subBrowser->GetIdentifier()];
     info.authName = settings.value(QStringLiteral("userName")).toString().toStdString();
     info.authPassword = settings.value(QStringLiteral("password")).toString().toStdString();
-    info.userAgent = settings.value(QStringLiteral("userAgent")).toString().toStdString();
     callback->Success(std::to_string(subBrowser->GetIdentifier()));
-    return true;
-  } else if (type == QLatin1String("webPageSignals")) {
-    const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
-    m_browserSignals[subBrowserId] = callback;
-    Q_ASSERT(persistent);
     return true;
   } else if (type == QLatin1String("returnEvaluateJavaScript")) {
     auto otherQueryId = json.value(QStringLiteral("queryId")).toInt(-1);
@@ -436,17 +456,44 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
       callback->Success({});
       return true;
     }
+  } else if (type == QLatin1String("beforeResourceLoadResponse")) {
+    const auto requestId = static_cast<uint64>(json.value(QStringLiteral("requestId")).toString().toULongLong());
+    auto callback = takeCallback(&m_requestCallbacks, requestId);
+    if (!callback.callback || !callback.request) {
+      qCWarning(handler) << "Unknown request with id" << requestId << "for query" << json;
+      return false;
+    }
+    const auto allow = json.value(QStringLiteral("allow")).toBool();
+    if (!allow) {
+      callback.callback->Continue(allow);
+      return true;
+    }
+    auto requestData = json.value(QStringLiteral("request")).toObject();
+    callback.request->SetURL(requestData.value(QStringLiteral("url")).toString().toStdString());
+    CefRequest::HeaderMap headers;
+    const auto& jsonHeaders = requestData.value(QStringLiteral("headers")).toObject();
+    for (auto it = jsonHeaders.begin(); it != jsonHeaders.end(); ++it) {
+      headers.insert(std::make_pair(it.key().toStdString(), it.value().toString().toStdString()));
+    }
+    callback.request->SetHeaderMap(headers);
+    callback.callback->Continue(true);
+    return true;
   }
 
   const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
-  CefRefPtr<CefBrowser> subBrowser = m_browsers.value(subBrowserId).browser;
+  auto& subBrowserInfo = m_browsers[subBrowserId];
+  const auto& subBrowser = subBrowserInfo.browser;
   if (!subBrowser) {
     qCWarning(handler) << "Unknown browser with id" << subBrowserId << "for request" << json;
     return false;
   }
 
   // below, all queries work on a browser
-  if (type == QLatin1String("openWebPage")) {
+  if (type == QLatin1String("webPageSignals")) {
+    subBrowserInfo.signalCallback = callback;
+    Q_ASSERT(persistent);
+    return true;
+  } else if (type == QLatin1String("openWebPage")) {
     const auto url = json.value(QStringLiteral("url")).toString().toStdString();
     subBrowser->GetMainFrame()->LoadURL(url);
     m_waitForLoadedCallbacks.insert(subBrowser->GetIdentifier(), callback);
@@ -647,6 +694,5 @@ void PhantomJSHandler::OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<
 
   m_waitForLoadedCallbacks.remove(browser->GetIdentifier());
   m_pendingQueryCallbacks.remove(query_id);
-  m_browserSignals.remove(browser->GetIdentifier());
   m_paintCallbacks.remove(browser->GetIdentifier());
 }

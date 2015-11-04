@@ -118,16 +118,15 @@ private:
   struct BrowserInfo
   {
     CefRefPtr<CefBrowser> browser;
-    CefString userAgent;
     CefString authName;
     CefString authPassword;
+    CefRefPtr<CefMessageRouterBrowserSide::Callback> signalCallback;
   };
   QHash<int, BrowserInfo> m_browsers;
 
   CefRefPtr<CefMessageRouterBrowserSide> m_messageRouter;
   // NOTE: using QHash prevents a strange ABI issue discussed here: http://www.magpcss.org/ceforum/viewtopic.php?f=6&t=13543
   QMultiHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_waitForLoadedCallbacks;
-  QHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_browserSignals;
   QHash<int64, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_pendingQueryCallbacks;
   QHash<int32, QPair<int, int>> m_viewRects;
   struct PaintInfo
@@ -138,6 +137,12 @@ private:
     CefRefPtr<CefMessageRouterBrowserSide::Callback> callback;
   };
   QHash<int32, PaintInfo> m_paintCallbacks;
+  struct RequestInfo
+  {
+    CefRefPtr<CefRequest> request;
+    CefRefPtr<CefRequestCallback> callback;
+  };
+  QHash<uint64, RequestInfo> m_requestCallbacks;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);
