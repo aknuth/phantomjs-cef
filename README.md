@@ -1,4 +1,4 @@
-# CEF based PhantomJS scratch repository
+# CEF based PhantomJS
 
 Can we implement PhantomJS on top of CEF? It looks like it!
 
