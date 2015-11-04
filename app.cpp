@@ -119,8 +119,15 @@ public:
                const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval,
                CefString& exception) override
   {
+    auto context = CefV8Context::GetCurrentContext();
+    static const std::string phantomjs_scheme = "phantomjs://";
+    const auto frameURL = context->GetFrame()->GetURL().ToString();
+    if (context->GetBrowser()->GetIdentifier() != 1 || frameURL.compare(0, phantomjs_scheme.size(), phantomjs_scheme)) {
+      exception = "Access to PhantomJS function \"" + name.ToString() + "\" not allowed from URL \"" + frameURL + "\".";
+      return true;
+    }
     if (name == "exit") {
-      CefV8Context::GetCurrentContext()->GetBrowser()->SendProcessMessage(PID_BROWSER, CefProcessMessage::Create("exit"));
+      context->GetBrowser()->SendProcessMessage(PID_BROWSER, CefProcessMessage::Create("exit"));
       return true;
     } else if (name == "printError" && !arguments.empty()) {
       std::cerr << arguments.at(0)->GetStringValue() << '\n';
@@ -134,10 +141,10 @@ public:
       const auto file = arguments.at(0)->GetStringValue();
       retval = CefV8Value::CreateString(readFile(file));
       return true;
-    } else if (name == "executeJavaScript") {
+    } else if (name == "executeJavaScrispt") {
       const auto code = arguments.at(0)->GetStringValue();
       const auto file = arguments.at(1)->GetStringValue();
-      CefV8Context::GetCurrentContext()->GetFrame()->ExecuteJavaScript(code, "file://" + file.ToString(), 1);
+      context->GetFrame()->ExecuteJavaScript(code, "file://" + file.ToString(), 1);
       return true;
     }
     exception = std::string("Unknown PhantomJS function: ") + name.ToString();
