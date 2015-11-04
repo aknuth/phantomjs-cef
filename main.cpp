@@ -22,6 +22,11 @@
 #pragma comment(lib, "cef_sandbox.lib")
 #endif
 
+#ifdef STATIC_QT_BUILD
+#include <QtPlugin>
+Q_IMPORT_PLUGIN (QWindowsIntegrationPlugin);
+#endif
+
 #endif
 
 #include <iostream>

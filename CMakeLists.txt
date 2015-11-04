@@ -44,7 +44,26 @@ SET_CEF_TARGET_OUT_DIR()
 # Executable target.
 add_executable(${CEF_TARGET} ${PHANTOMJS_SRCS})
 add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
-target_link_libraries(${CEF_TARGET} libcef_lib libcef_dll_wrapper ${CEF_STANDARD_LIBS} Qt5::Gui Qt5::PrintSupport)
+message(STATUS "${_qt5Core_install_prefix}")
+target_link_libraries(${CEF_TARGET}
+	libcef_lib
+	libcef_dll_wrapper
+	${CEF_STANDARD_LIBS}
+	Qt5::Gui
+	Qt5::PrintSupport
+)
+if (OS_WINDOWS AND STATIC_QT_BUILD)
+target_link_libraries(${CEF_TARGET}
+	"${_qt5Core_install_prefix}/lib/qtharfbuzzng.lib"
+	"${_qt5Core_install_prefix}/lib/qtpcre.lib"
+	"${_qt5Core_install_prefix}/lib/qtfreetype.lib"
+	"${_qt5Core_install_prefix}/lib/Qt5PlatformSupport.lib"
+	"${_qt5Core_install_prefix}/plugins/platforms/qwindows.lib"
+	"Ws2_32.lib"
+	"Imm32.lib"
+)
+add_definitions(-DSTATIC_QT_BUILD=1)
+endif()
 
 if(OS_WINDOWS AND USE_SANDBOX)
   # Logical target used to link the cef_sandbox library.
