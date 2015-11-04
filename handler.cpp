@@ -367,10 +367,37 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
       jsonHeaders[QString::fromStdString(header.first)] = QString::fromStdString(header.second);
     }
   }
+  QJsonArray jsonPost;
+  if (const auto post = request->GetPostData()) {
+    CefPostData::ElementVector elements;
+    post->GetElements(elements);
+    for (const auto& element : elements) {
+      QJsonObject elementJson{
+        {QStringLiteral("type"), element->GetType()},
+      };
+      switch (element->GetType()) {
+        case PDE_TYPE_BYTES: {
+          QByteArray bytes;
+          bytes.resize(element->GetBytesCount());
+          element->GetBytes(bytes.size(), bytes.data());
+          elementJson[QStringLiteral("bytes")] = QString::fromUtf8(bytes.toBase64());
+          break;
+        }
+        case PDE_TYPE_FILE:
+          elementJson[QStringLiteral("file")] = QString::fromStdString(element->GetFile().ToString());
+          break;
+        case PDE_TYPE_EMPTY:
+          break;
+      }
+      jsonPost.append(elementJson);
+    }
+  }
 
   const QJsonObject jsonRequest = {
     {QStringLiteral("headers"), jsonHeaders},
+    {QStringLiteral("post"), jsonPost},
     {QStringLiteral("url"), QString::fromStdString(request->GetURL().ToString())},
+    {QStringLiteral("method"), QString::fromStdString(request->GetMethod().ToString())},
     {QStringLiteral("flags"), request->GetFlags()},
     {QStringLiteral("resourceType"), static_cast<int>(request->GetResourceType())},
     {QStringLiteral("transitionType"), static_cast<int>(request->GetTransitionType())},
@@ -480,6 +507,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
       headers.insert(std::make_pair(it.key().toStdString(), it.value().toString().toStdString()));
     }
     callback.request->SetHeaderMap(headers);
+    // TODO: post support
     callback.callback->Continue(true);
     return true;
   }
