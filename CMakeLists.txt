@@ -53,17 +53,24 @@ target_link_libraries(${CEF_TARGET}
   Qt5::PrintSupport
 )
 
-if (OS_WINDOWS AND STATIC_QT_BUILD)
-  target_link_libraries(${CEF_TARGET}
-    "${_qt5Core_install_prefix}/lib/qtharfbuzzng.lib"
-    "${_qt5Core_install_prefix}/lib/qtpcre.lib"
-    "${_qt5Core_install_prefix}/lib/qtfreetype.lib"
-    "${_qt5Core_install_prefix}/lib/Qt5PlatformSupport.lib"
-    "${_qt5Core_install_prefix}/plugins/platforms/qwindows.lib"
-    "Ws2_32.lib"
-    "Imm32.lib"
-  )
-  add_definitions(-DSTATIC_QT_BUILD=1)
+if (OS_WINDOWS)
+    if (CMAKE_BUILD_TYPE STREQUAL "Release")
+      set(d "")
+    else() # Debug build
+      set(d "d")
+    endif()
+    if (NOT EXISTS "${_qt5Core_install_prefix}/lib/qtharfbuzzng${d}.lib")
+      message(FATAL_ERROR "PhantomJS only supports building on Windows against a static Qt configured with -static -static-runtime!")
+    endif()
+    target_link_libraries(${CEF_TARGET}
+      "${_qt5Core_install_prefix}/lib/qtharfbuzzng${d}.lib"
+      "${_qt5Core_install_prefix}/lib/qtpcre${d}.lib"
+      "${_qt5Core_install_prefix}/lib/qtfreetype${d}.lib"
+      "${_qt5Core_install_prefix}/lib/Qt5PlatformSupport${d}.lib"
+      "${_qt5Core_install_prefix}/plugins/platforms/qwindows${d}.lib"
+      "Ws2_32.lib"
+      "Imm32.lib"
+    )
 endif()
 
 if(OS_WINDOWS AND USE_SANDBOX)

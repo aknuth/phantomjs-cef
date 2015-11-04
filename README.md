@@ -38,33 +38,21 @@ specified above:
 
     call "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" amd64
 
-Then, make sure your Qt installation can be found by CMake. For this it should
-be enough to add the `bin` folder containing `qmake` to your `PATH` environment
-variable. Also, make sure `ninja` is in your `PATH`.
+Then, we need a static Qt installation of QtBase configured with
 
+    configure -static -static-runtime -nomake tests -nomake examples -opensource ...
+
+Add the `bin` folder containing `qmake` to your `PATH` environment
+variable. Also, make sure `ninja` is in your `PATH`.
 Either use a tool like `patheditor` or do it manually via:
 
-    SET PATH=C:\ninja;C:\Qt\5.5\msvc2013_64\bin;%PATH%
+    SET PATH=C:\ninja;C:\Qt\5.5-static\bin;%PATH%
 
 Here are the links to download the dependencies:
 
 * Microsoft Visual Studio 2013 Express for Desktop: https://www.microsoft.com/download/details.aspx?id=44914
 * Ninja: https://github.com/martine/ninja/releases
-* Qt: http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe
-
-## Windows Static Build
-
-The PhantomJS-CEF builds provided here on GitHub are build against a static Qt 5
-and static MSVC runtime. Qt was configured with
-
-    configure -static -static-runtime -nomake tests -nomake examples -opensource
-
-Then build `qtbase` and once it is finished, add the generated `bin` folder which
-contains `qmake` into your `PATH` environment variable (see above). Once done,
-continue with PhantomJS-CEF as explained above, but additionally pass
-`-DSTATIC_QT_BUILD=1` to CMake as shown below:
-
-    cmake -DSTATIC_QT_BUILD=1 -DCMAKE_BUILD_TYPE=Release -GNinja ..
+* Qt: git clone git://code.qt.io/qt/qtbase.git
 
 ## Async API
 
