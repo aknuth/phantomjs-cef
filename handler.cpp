@@ -351,6 +351,18 @@ bool PhantomJSHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<C
   return false;
 }
 
+template<typename T>
+QJsonObject headerMapToJson(const CefRefPtr<T>& r)
+{
+  QJsonObject jsonHeaders;
+  CefRequest::HeaderMap headers;
+  r->GetHeaderMap(headers);
+  for (const auto& header : headers) {
+    jsonHeaders[QString::fromStdString(header.first)] = QString::fromStdString(header.second);
+  }
+  return jsonHeaders;
+}
+
 CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                    CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
 {
@@ -359,14 +371,6 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
     return RV_CONTINUE;
   }
 
-  QJsonObject jsonHeaders;
-  {
-    CefRequest::HeaderMap headers;
-    request->GetHeaderMap(headers);
-    for (const auto& header : headers) {
-      jsonHeaders[QString::fromStdString(header.first)] = QString::fromStdString(header.second);
-    }
-  }
   QJsonArray jsonPost;
   if (const auto post = request->GetPostData()) {
     CefPostData::ElementVector elements;
@@ -394,7 +398,7 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
   }
 
   const QJsonObject jsonRequest = {
-    {QStringLiteral("headers"), jsonHeaders},
+    {QStringLiteral("headers"), headerMapToJson(request)},
     {QStringLiteral("post"), jsonPost},
     {QStringLiteral("url"), QString::fromStdString(request->GetURL().ToString())},
     {QStringLiteral("method"), QString::fromStdString(request->GetMethod().ToString())},
@@ -412,6 +416,29 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
   };
   signalCallback->Success(QJsonDocument(data).toJson().constData());
   return RV_CONTINUE_ASYNC;
+}
+
+bool PhantomJSHandler::OnResourceResponse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                                          CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response)
+{
+  auto signalCallback = m_browsers.value(browser->GetIdentifier()).signalCallback;
+  if (signalCallback) {
+    const QJsonObject jsonResponse = {
+      {QStringLiteral("status"), response->GetStatus()},
+      {QStringLiteral("statusText"), QString::fromStdString(response->GetStatusText())},
+      {QStringLiteral("contentType"), QString::fromStdString(response->GetMimeType())},
+      {QStringLiteral("headers"), headerMapToJson(response)},
+      {QStringLiteral("url"), QString::fromStdString(request->GetURL())},
+      {QStringLiteral("id"), QString::number(request->GetIdentifier())},
+      /// TODO: time, stage, bodySize, redirectUrl
+    };
+    const QJsonObject data = {
+      {QStringLiteral("signal"), QStringLiteral("onResourceReceived")},
+      {QStringLiteral("args"), QJsonArray{jsonResponse}},
+    };
+    signalCallback->Success(QJsonDocument(data).toJson().constData());
+  }
+  return false;
 }
 
 bool PhantomJSHandler::GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,

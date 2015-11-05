@@ -100,6 +100,7 @@
     this.onLoadStarted = function() {};
     this.onLoadFinished = function(status) {};
     this.onResourceRequested = function(requestData, networkRequest) {};
+    this.onResourceReceived = function(response) {};
     this.open = function(url, callback) {
       var ret = createBrowser().then(function() {
         return phantom.internal.query({

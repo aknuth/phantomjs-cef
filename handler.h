@@ -97,6 +97,8 @@ class PhantomJSHandler : public CefClient,
                                                       CefRefPtr<CefFrame> frame,
                                                       CefRefPtr<CefRequest> request,
                                                       CefRefPtr<CefRequestCallback> callback) override;
+  bool OnResourceResponse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
+                          CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response) override;
   bool GetAuthCredentials(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, bool isProxy,
                           const CefString & host, int port, const CefString & realm,
                           const CefString & scheme, CefRefPtr<CefAuthCallback> callback) override;
