@@ -129,6 +129,33 @@
         browser: internal.id
       });
     };
+    this.waitForDomElement = function(selector, pollInterval, maxPollAttempts) {
+      if (!pollInterval) {
+        pollInterval = 100;
+      }
+      if (!maxPollAttempts) {
+        maxPollAttempts = 50;
+      }
+      return new Promise(function(accept, reject) {
+        var pollAttempts = 0;
+        function pollElement() {
+          webpage.evaluate(function(selector) {
+            var element = document.querySelector(selector);
+            return element ? element : null;
+          }, selector)
+          .then(function(element) {
+            if (element) {
+              accept(element);
+            } else if (++pollAttempts > maxPollAttempts) {
+              reject(Error("Timeout while waiting for DOM element: " + selector));
+            } else {
+              setTimeout(pollElement, pollInterval);
+            }
+          });
+        }
+        pollElement();
+      });
+    };
     this.stop = function() {
       verifyBrowserCreated();
       return phantom.internal.query({type: "stopWebPage", browser: internal.id});
@@ -147,10 +174,6 @@
         onFailure: function() {}
       });
       internal.id = null;
-    };
-    this.evaluate = function(code) {
-      arguments[0] = String(arguments[0]);
-      return webpage.evaluateJavaScript.apply(webpage, arguments);
     };
     this.evaluateJavaScript = function(code) {
       verifyBrowserCreated();
@@ -172,7 +195,7 @@
       args = JSON.stringify(args);
       return phantom.internal.query({
           type: "evaluateJavaScript",
-          code: code,
+          code: String(code),
           args: args,
           browser: internal.id
       }).then(function(retval) {
@@ -188,6 +211,7 @@
         throw error;
       });
     };
+    this.evaluate = this.evaluateJavaScript;
     // can be assigned by the user
     this.onError = function(error) {
       console.log(error);

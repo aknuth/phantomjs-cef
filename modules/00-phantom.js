@@ -95,7 +95,7 @@ if (!phantom)
         // so instead copy the first level of data over
         // TODO: extend depth at will, but make sure we don't fall into cycles
         function prepareJSONStringify(obj) {
-          if (typeof(obj) !== "object") {
+          if (typeof(obj) !== "object" || obj === null) {
             return obj;
           }
           var ret = {};
@@ -107,7 +107,8 @@ if (!phantom)
         try {
           retval = JSON.stringify(prepareJSONStringify(retval))
         } catch(error) {
-          console.log("failed to stringify JavaScript return value: " + retval);
+          console.log("failed to stringify JavaScript return value: " + retval + "\n" + error);
+          retval = JSON.stringify(retval);
         }
         startPhantomJsQuery({
           request: JSON.stringify({
