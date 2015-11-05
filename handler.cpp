@@ -275,19 +275,19 @@ void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFra
 
 void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, const CefString& url, bool success)
 {
-  while (auto callback = takeCallback(&m_waitForLoadedCallbacks, browser)) {
-    if (success) {
-      callback->Success(std::to_string(statusCode));
-    } else {
-      callback->Failure(statusCode, "Failed to load URL: " + url.ToString());
-    }
-  }
-
   if (auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
     if (success) {
       callback->Success("{\"signal\":\"onLoadFinished\",\"args\":[\"success\"]}");
     } else {
       callback->Success("{\"signal\":\"onLoadFinished\",\"args\":[\"fail\"]}");
+    }
+  }
+
+  while (auto callback = takeCallback(&m_waitForLoadedCallbacks, browser)) {
+    if (success) {
+      callback->Success(std::to_string(statusCode));
+    } else {
+      callback->Failure(statusCode, "Failed to load URL: " + url.ToString());
     }
   }
 }
