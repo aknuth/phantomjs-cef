@@ -223,7 +223,7 @@ void PhantomJSHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
   qCDebug(handler) << browser->GetIdentifier() << frame->IsMain() << errorCode << errorText << failedUrl;
 
   if (frame->IsMain()) {
-    handleLoadEnd(browser, errorCode, false);
+    handleLoadEnd(browser, errorCode, failedUrl, false);
   }
 
   // Don't display an error for downloaded files.
@@ -270,16 +270,16 @@ void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFra
 
   /// TODO: is this OK?
   const bool success = httpStatusCode < 400;
-  handleLoadEnd(browser, httpStatusCode, success);
+  handleLoadEnd(browser, httpStatusCode, frame->GetURL(), success);
 }
 
-void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, bool success)
+void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, const CefString& url, bool success)
 {
   while (auto callback = takeCallback(&m_waitForLoadedCallbacks, browser)) {
     if (success) {
       callback->Success(std::to_string(statusCode));
     } else {
-      callback->Failure(statusCode, "load error");
+      callback->Failure(statusCode, "Failed to load URL: " + url.ToString());
     }
   }
 

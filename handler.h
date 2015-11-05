@@ -112,7 +112,7 @@ class PhantomJSHandler : public CefClient,
   void CloseAllBrowsers(bool force_close);
 
 private:
-  void handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, bool success);
+  void handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, const CefString& url, bool success);
 
   // List of existing browser windows. Only accessed on the CEF UI thread.
   struct BrowserInfo
