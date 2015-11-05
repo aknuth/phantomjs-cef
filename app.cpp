@@ -141,7 +141,7 @@ public:
       const auto file = arguments.at(0)->GetStringValue();
       retval = CefV8Value::CreateString(readFile(file));
       return true;
-    } else if (name == "executeJavaScrispt") {
+    } else if (name == "executeJavaScript") {
       const auto code = arguments.at(0)->GetStringValue();
       const auto file = arguments.at(1)->GetStringValue();
       context->GetFrame()->ExecuteJavaScript(code, "file://" + file.ToString(), 1);
