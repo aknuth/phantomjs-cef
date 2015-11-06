@@ -9,8 +9,10 @@ page.onLoadFinished = function(status) {
 }
 
 // shortened URL to http://phantomjs.org
-page.open("http://bit.ly/1kzC14S")
+page.url = "http://bit.ly/1kzC14S";
+
+page.waitForLoaded()
   .then(function(status) {
-    console.log("finished! " + status);
+    console.log("finished! " + status + ": " + page.url);
   })
   .then(phantom.exit)

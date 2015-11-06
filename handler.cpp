@@ -276,11 +276,15 @@ void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFra
 void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, const CefString& url, bool success)
 {
   if (auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
-    if (success) {
-      callback->Success("{\"signal\":\"onLoadFinished\",\"args\":[\"success\"]}");
-    } else {
-      callback->Success("{\"signal\":\"onLoadFinished\",\"args\":[\"fail\"]}");
-    }
+    const QJsonObject data = {
+      {QStringLiteral("signal"), QStringLiteral("onLoadEnd")},
+      {QStringLiteral("internal"), true},
+      {QStringLiteral("args"), QJsonArray{
+        QString::fromStdString(url),
+        success,
+      }}
+    };
+    callback->Success(QJsonDocument(data).toJson().constData());
   }
 
   while (auto callback = takeCallback(&m_waitForLoadedCallbacks, browser)) {
@@ -413,7 +417,7 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
   m_requestCallbacks[request->GetIdentifier()] = {request, callback};
 
   const QJsonObject data = {
-    {QStringLiteral("signal"), QStringLiteral("beforeResourceLoad")},
+    {QStringLiteral("signal"), QStringLiteral("onBeforeResourceLoad")},
     {QStringLiteral("args"), QJsonArray{jsonRequest, QString::number(request->GetIdentifier())}},
     {QStringLiteral("internal"), true},
   };

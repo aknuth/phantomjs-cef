@@ -28,7 +28,18 @@
 (function() {
   phantom.WebPage = function() {
     var webpage = this;
+    Object.defineProperty(webpage, "url", {
+      get: function() {
+        return internal.url;
+      },
+      set: function(url) {
+        internal.url = url;
+        webpage.open(url);
+      },
+      configurable: false
+    });
     var internal = {
+      url: "about:blank",
       viewportSize: {width: 800, height: 600},
       zoomFactor: 1.,
       createBrowser: null,
@@ -43,7 +54,7 @@
           waiter.apply(webpage, args);
         }
       },
-      beforeResourceLoad: function(request, requestId) {
+      onBeforeResourceLoad: function(request, requestId) {
         if (typeof(webpage.settings.userAgent) === "string") {
           request.headers["User-Agent"] = webpage.settings.userAgent;
         }
@@ -67,6 +78,10 @@
           request: request,
           allow: allow
         });
+      },
+      onLoadEnd: function(url, success) {
+        internal.url = url;
+        internal.dispatchSignal("onLoadFinished", [success ? "success" : "fail"]);
       },
       signalWaiters: {}
     };
@@ -155,10 +170,11 @@
       return ret;
     };
     this.waitForLoaded = function() {
-      verifyBrowserCreated();
-      return phantom.internal.query({
-        type: "waitForLoaded",
-        browser: internal.id
+      return createBrowser().then(function() {
+        return phantom.internal.query({
+          type: "waitForLoaded",
+          browser: internal.id
+        });
       });
     };
     this.waitForDomElement = function(selector, pollInterval, maxPollAttempts) {
