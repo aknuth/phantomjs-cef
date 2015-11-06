@@ -334,7 +334,7 @@
       userAgent: null,
       userName: null,
       password: null,
-      resourceTimeout: 10 * 1000, // ms timeout
+      resourceTimeout: 30 * 1000, // ms timeout
     };
     function addProperty(name, object) {
       Object.defineProperty(object, name, {
