@@ -57,7 +57,8 @@
           request: request,
           allow: allow
         });
-      }
+      },
+      signalWaiters: {}
     };
     function verifyBrowserCreated() {
       if (!internal.id) {
@@ -85,6 +86,13 @@
               var response = JSON.parse(response);
               var target = response.internal ? internal : webpage;
               target[response.signal].apply(webpage, response.args);
+              if (!response.internal) {
+                var waiter = internal.signalWaiters[response.signal];
+                if (waiter) {
+                  delete internal.signalWaiters[response.signal];
+                  waiter.apply(webpage, response.args);
+                }
+              }
             },
             onFailure: function() {}
           });
@@ -99,8 +107,14 @@
     };
     this.onLoadStarted = function() {};
     this.onLoadFinished = function(status) {};
+    this.onPaint = function() {};
     this.onResourceRequested = function(requestData, networkRequest) {};
     this.onResourceReceived = function(response) {};
+    this.waitForSignal = function(signal) {
+      return new Promise(function(resolve) {
+        internal.signalWaiters[signal] = resolve;
+      });
+    };
     this.open = function(url, callback) {
       var ret = createBrowser().then(function() {
         return phantom.internal.query({

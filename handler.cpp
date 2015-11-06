@@ -338,6 +338,9 @@ void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType t
       }
     }
   }
+  if (auto signalCallback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
+    signalCallback->Success("{\"signal\":\"onPaint\"}");
+  }
 }
 
 void PhantomJSHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status)
