@@ -51,6 +51,11 @@
           }
         };
         webpage.onResourceRequested(request, networkRequest);
+        if (internal.signalWaiters.onResourceRequested) {
+          var waiter = internal.signalWaiters.onResourceRequested;
+          delete internal.signalWaiters.onResourceRequested;
+          waiter(request, networkRequest);
+        }
         phantom.internal.query({
           type: "beforeResourceLoadResponse",
           requestId: requestId,
