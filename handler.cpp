@@ -97,7 +97,7 @@ void initBrowserSettings(CefBrowserSettings& browser_settings, bool isPhantomMai
   }
 }
 
-constexpr bool PRINT_SETTINGS = false;
+const bool PRINT_SETTINGS = false;
 
 void printValue(const CefString& key, const CefRefPtr<CefValue>& value) {
   switch (value->GetType()) {
@@ -135,7 +135,7 @@ void printValue(const CefString& key, const CefRefPtr<CefValue>& value) {
     case VTYPE_LIST:
       qDebug() << key << "list";
       auto list = value->GetList();
-      for (size_t i = 0; i < list->GetSize(); ++i) {
+      for (int i = 0; i < static_cast<int>(list->GetSize()); ++i) {
         printValue(key.ToString() + "[" + std::to_string(i) + "]", list->GetValue(i));
       }
       break;
@@ -472,14 +472,17 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
       switch (element->GetType()) {
         case PDE_TYPE_BYTES: {
           QByteArray bytes;
-          bytes.resize(element->GetBytesCount());
+          bytes.resize(static_cast<int>(element->GetBytesCount()));
           element->GetBytes(bytes.size(), bytes.data());
-          elementJson[QStringLiteral("bytes")] = QString::fromUtf8(bytes.toBase64());
+          const auto STRING_BYTES = QStringLiteral("bytes");
+          elementJson[STRING_BYTES] = QString::fromUtf8(bytes.toBase64());
           break;
         }
-        case PDE_TYPE_FILE:
-          elementJson[QStringLiteral("file")] = QString::fromStdString(element->GetFile().ToString());
+        case PDE_TYPE_FILE: {
+          const auto STRING_FILE = QStringLiteral("file");
+          elementJson[STRING_FILE] = QString::fromStdString(element->GetFile().ToString());
           break;
+        }
         case PDE_TYPE_EMPTY:
           break;
       }
