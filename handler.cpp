@@ -96,6 +96,52 @@ void initBrowserSettings(CefBrowserSettings& browser_settings, bool isPhantomMai
     /// TODO: extend
   }
 }
+
+constexpr bool PRINT_SETTINGS = false;
+
+void printValue(const CefString& key, const CefRefPtr<CefValue>& value) {
+  switch (value->GetType()) {
+    case VTYPE_INVALID:
+      qDebug() << key << "invalid";
+      break;
+    case VTYPE_NULL:
+      qDebug() << key << "null";
+      break;
+    case VTYPE_BOOL:
+      qDebug() << key << value->GetBool();
+      break;
+    case VTYPE_INT:
+      qDebug() << key << value->GetInt();
+      break;
+    case VTYPE_DOUBLE:
+      qDebug() << key << value->GetDouble();
+      break;
+    case VTYPE_STRING:
+      qDebug() << key << value->GetString();
+      break;
+    case VTYPE_BINARY:
+      qDebug() << key << "binary";
+      break;
+    case VTYPE_DICTIONARY: {
+      qDebug() << key << "dictionary";
+      auto dict = value->GetDictionary();
+      CefDictionaryValue::KeyList keys;
+      dict->GetKeys(keys);
+      for (const auto& subKey : keys) {
+        printValue(key.ToString() + "." + subKey.ToString(), dict->GetValue(subKey));
+      }
+      break;
+    }
+    case VTYPE_LIST:
+      qDebug() << key << "list";
+      auto list = value->GetList();
+      for (size_t i = 0; i < list->GetSize(); ++i) {
+        printValue(key.ToString() + "[" + std::to_string(i) + "]", list->GetValue(i));
+      }
+      break;
+  }
+}
+
 }
 
 PhantomJSHandler::PhantomJSHandler()
@@ -169,6 +215,15 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
   CEF_REQUIRE_UI_THREAD();
 
   m_browsers[browser->GetIdentifier()].browser = browser;
+
+  if (PRINT_SETTINGS) {
+    auto prefs = browser->GetHost()->GetRequestContext()->GetAllPreferences(true);
+    CefDictionaryValue::KeyList keys;
+    prefs->GetKeys(keys);
+    for (const auto& key : keys) {
+      printValue(key, prefs->GetValue(key));
+    }
+  }
 
   qCDebug(handler) << browser->GetIdentifier();
 }
