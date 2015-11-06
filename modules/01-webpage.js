@@ -33,6 +33,16 @@
       zoomFactor: 1.,
       createBrowser: null,
       id: null,
+      dispatchSignal: function(signal, args) {
+        if (typeof(webpage[signal]) === "function") {
+          webpage[signal].apply(webpage, args);
+        }
+        var waiter = internal.signalWaiters[signal];
+        if (waiter) {
+          delete internal.signalWaiters[signal];
+          waiter.apply(webpage, args);
+        }
+      },
       beforeResourceLoad: function(request, requestId) {
         if (typeof(webpage.settings.userAgent) === "string") {
           request.headers["User-Agent"] = webpage.settings.userAgent;
@@ -50,12 +60,7 @@
             request.headers[key] = value;
           }
         };
-        webpage.onResourceRequested(request, networkRequest);
-        if (internal.signalWaiters.onResourceRequested) {
-          var waiter = internal.signalWaiters.onResourceRequested;
-          delete internal.signalWaiters.onResourceRequested;
-          waiter(request, networkRequest);
-        }
+        internal.dispatchSignal("onResourceRequested", [request, networkRequest]);
         phantom.internal.query({
           type: "beforeResourceLoadResponse",
           requestId: requestId,
@@ -89,14 +94,10 @@
             persistent: true,
             onSuccess: function(response) {
               var response = JSON.parse(response);
-              var target = response.internal ? internal : webpage;
-              target[response.signal].apply(webpage, response.args);
               if (!response.internal) {
-                var waiter = internal.signalWaiters[response.signal];
-                if (waiter) {
-                  delete internal.signalWaiters[response.signal];
-                  waiter.apply(webpage, response.args);
-                }
+                internal.dispatchSignal(response.signal, response.args);
+              } else {
+                internal[response.signal].apply(webpage, response.args);
               }
             },
             onFailure: function() {}
@@ -235,9 +236,7 @@
         }
         return retval;
       }, function(error) {
-        if (typeof(webpage.onError) === "function") {
-          webpage.onError.apply(webpage, arguments);
-        }
+        internal.dispatchSignal("onError", arguments);
         // rethrow so that any .then continuation can catch this in an error handler
         throw error;
       });
