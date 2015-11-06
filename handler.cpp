@@ -398,7 +398,25 @@ void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType t
     }
   }
   if (auto signalCallback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
-    signalCallback->Success("{\"signal\":\"onPaint\"}");
+    QJsonArray jsonDirtyRects;
+    for (const auto& rect : dirtyRects) {
+      jsonDirtyRects.push_back(QJsonObject{
+        {QStringLiteral("x"), rect.x},
+        {QStringLiteral("y"), rect.y},
+        {QStringLiteral("width"), rect.width},
+        {QStringLiteral("height"), rect.height},
+      });
+    }
+    const QJsonObject data = {
+      {QStringLiteral("signal"), QStringLiteral("onPaint")},
+      {QStringLiteral("args"), QJsonArray{
+        jsonDirtyRects,
+        width,
+        height,
+        type
+      }}
+    };
+    signalCallback->Success(QJsonDocument(data).toJson().constData());
   }
 }
 

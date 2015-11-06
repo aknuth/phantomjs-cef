@@ -15,6 +15,10 @@ function sendEvent(type, selector) {
     })
 }
 
+page.onPaint = function(dirtyRects, width, height, isPopup) {
+  console.log("Paint event of width = " + width + ", height = " + height + "! Was a popup? " + isPopup + ", Dirty rects = " + JSON.stringify(dirtyRects, 1));
+};
+
 page.open('http://www.tuifly.com/de/index.html')
     .then(function() {
         return sendEvent('click', 'label[data-oneway=true]');
