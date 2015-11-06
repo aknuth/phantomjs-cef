@@ -80,6 +80,7 @@ class PhantomJSHandler : public CefClient,
                            const CefString& failedUrl) override;
   void OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame) override;
   void OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode) override;
+  void OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward) override;
 
   // CefRenderHandler methods:
   virtual bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
@@ -123,6 +124,7 @@ private:
     CefString authName;
     CefString authPassword;
     CefRefPtr<CefMessageRouterBrowserSide::Callback> signalCallback;
+    bool firstLoadFinished = false;
   };
   QHash<int, BrowserInfo> m_browsers;
 

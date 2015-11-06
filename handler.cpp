@@ -316,21 +316,31 @@ void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFra
 {
   CEF_REQUIRE_UI_THREAD();
 
-  // filter out events from sub frames or when loading about:blank
-  if (!frame->IsMain() || httpStatusCode < 200) {
+  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << frame->IsMain() << httpStatusCode;
+
+  // filter out events from sub frames
+  if (!frame->IsMain()) {
     return;
   }
-
-  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << httpStatusCode;
 
   /// TODO: is this OK?
   const bool success = httpStatusCode < 400;
   handleLoadEnd(browser, httpStatusCode, frame->GetURL(), success);
 }
 
+void PhantomJSHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward)
+{
+  qCDebug(handler) << browser->GetIdentifier() << isLoading;
+}
+
 void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, const CefString& url, bool success)
 {
-  if (auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
+  auto& browserInfo = m_browsers[browser->GetIdentifier()];
+  if (!browserInfo.firstLoadFinished) {
+    browserInfo.firstLoadFinished = true;
+    return;
+  }
+  if (auto callback = browserInfo.signalCallback) {
     const QJsonObject data = {
       {QStringLiteral("signal"), QStringLiteral("onLoadEnd")},
       {QStringLiteral("internal"), true},
