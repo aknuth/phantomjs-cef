@@ -110,6 +110,7 @@
     this.onPaint = function() {};
     this.onResourceRequested = function(requestData, networkRequest) {};
     this.onResourceReceived = function(response) {};
+    // TODO: onResourceTimeout
     this.waitForSignal = function(signal) {
       return new Promise(function(resolve) {
         internal.signalWaiters[signal] = resolve;
@@ -122,6 +123,16 @@
           url: url,
           browser: internal.id})
       });
+      // TODO: this is just a workaround as it won't catch timeouts
+      //       for embedded resources such as images or scripts.
+      //       http://www.magpcss.org/ceforum/viewtopic.php?f=6&t=13080&p=28385#p28385
+      if (webpage.settings.resourceTimeout > 0) {
+        ret = Promise.race([ret,
+            phantom.wait(webpage.settings.resourceTimeout).then(function() {
+              webpage.stop();
+              return webpage.waitForLoaded();
+            })]);
+      }
       if (typeof(callback) === "function") {
         // backwards compatibility when callback is given
         return ret.then(function() {
@@ -303,6 +314,7 @@
       userAgent: null,
       userName: null,
       password: null,
+      resourceTimeout: 10 * 1000, // ms timeout
     };
     function addProperty(name, object) {
       Object.defineProperty(object, name, {
