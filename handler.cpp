@@ -9,6 +9,7 @@
 #include <iostream>
 #include <locale>
 #include <algorithm>
+#include <iostream>
 
 #include <QJsonDocument>
 #include <QJsonObject>

@@ -26,3 +26,13 @@
 *.exe
 *.out
 *.app
+
+.settings
+.cproject
+.project
+CMakeCache.txt
+Makefile
+*moc*.cpp
+qrc_*
+*.depends
+CMakeFiles

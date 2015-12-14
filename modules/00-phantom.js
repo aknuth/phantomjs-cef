@@ -36,6 +36,8 @@ if (!phantom)
       return { create: function() { return new phantom.WebPage; } };
     } else if (file === "system") {
       return new phantom.System;
+    } else if (file === "fs") {
+        return new phantom.Fs;
     }
     /// TODO:
     throw Error("require(" + file + ") is not yet implemented");
@@ -45,6 +47,11 @@ if (!phantom)
     native function exit();
     exit();
   };
+  
+//  phantom.writeFile = function(file,s) {
+//    native function writeFile();
+//    return writeFile(file,s);
+//  };
 
   phantom.injectJs = function(file) {
     var library = phantom.internal.findLibrary(file);

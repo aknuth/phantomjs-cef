@@ -3,5 +3,6 @@
     <file>modules/00-phantom.js</file>
     <file>modules/01-webpage.js</file>
     <file>modules/02-system.js</file>
+    <file>modules/03-fs.js</file>
   </qresource>
 </RCC>

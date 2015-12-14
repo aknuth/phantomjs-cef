@@ -16,10 +16,10 @@ function sendEvent(type, selector) {
 }
 
 page.onPaint = function(dirtyRects, width, height, isPopup) {
-  console.log("Paint event of width = " + width + ", height = " + height + "! Was a popup? " + isPopup + ", Dirty rects = " + JSON.stringify(dirtyRects, 1));
+  //console.log("Paint event of width = " + width + ", height = " + height + "! Was a popup? " + isPopup + ", Dirty rects = " + JSON.stringify(dirtyRects, 1));
 };
 
-page.open('http://www.tuifly.com/de/index.html')
+page.open('https://www.tuifly.com/Select.aspx')
     .then(function() {
         return sendEvent('click', 'label[data-oneway=true]');
     })
@@ -46,6 +46,15 @@ page.open('http://www.tuifly.com/de/index.html')
     })
     .then(function() {
         return page.sendEvent('keypress', page.event.key.Tab);
+    })
+    //.then(function() {
+    //    return page.sendEvent('keypress', page.event.key.space);
+    //})
+    .then(function() {
+        return sendEvent('click', 'label.js-tfl-chooser');
+    })
+    .then(function(){
+        phantom.wait(2000);
     })
     .then(function() {
         return sendEvent('click', 'button.big');

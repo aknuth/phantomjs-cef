@@ -312,6 +312,22 @@
         return retval;
       });
     };
+    this.inject = function(func) {
+      verifyBrowserCreated();
+      return phantom.internal.query({
+        type: "evaluateJavaScript",
+        //code: "function() {\n" + code + "\n}", // wrap in function so the code can be called
+        code: "function(){ "+func.name+" = "+func.toString()+"}",
+        url: "file://injected", // file:// is required for proper console.log messages
+        line: 0, // we prepend one line, so start at line 1
+        browser: internal.id
+      }).then(function(retval) {
+        if (retval && typeof(retval) === "string") {
+          retval = JSON.parse(retval);
+        }
+        return retval;
+      });
+    };
     this.libraryPath = phantom.libraryPath;
     this.paperSize = {
       format: "A4",

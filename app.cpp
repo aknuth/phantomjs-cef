@@ -10,10 +10,12 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <string>  
 
 #include "handler.h"
 #include "print_handler.h"
 #include "debug.h"
+#include "fs.h"
 
 #include "include/cef_browser.h"
 #include "include/cef_command_line.h"
@@ -145,6 +147,124 @@ public:
       const auto code = arguments.at(0)->GetStringValue();
       const auto file = arguments.at(1)->GetStringValue();
       context->GetFrame()->ExecuteJavaScript(code, "file://" + file.ToString(), 1);
+      return true;
+//##########################################################################################################
+// FileSystem Functions
+//##########################################################################################################
+    } else if (name == "write") {
+      const auto filename = arguments.at(0)->GetStringValue();
+      const auto s = arguments.at(1)->GetStringValue();
+      const auto m =  QString::fromStdString(arguments.at(2)->GetStringValue()).isEmpty()?"W":arguments.at(2)->GetStringValue();
+      //qDebug() << QString::fromStdString(m)+" --> "+QString::compare(QString::fromStdString(m),"W",Qt::CaseInsensitive);
+      QFile::OpenMode modeCode = QString::compare(QString::fromStdString(m),QString::fromStdString("W"),Qt::CaseInsensitive)==0 ?QFile::WriteOnly:QFile::Append;
+      QFile* f = new QFile(QString::fromStdString(filename.ToString()));
+      if (!f->open(modeCode)) {
+          delete f;
+          qDebug() << "FileSystem::open - " << "Couldn't be opened:" << filename.ToString();
+          return false;
+      }
+      const auto fs = new File(f);
+      fs->write(QString::fromStdString(s));
+      fs->close();
+      delete fs;
+      return true;
+    } else if (name == "read") {
+      const auto filename = arguments.at(0)->GetStringValue();
+      QFile::OpenMode modeCode = QFile::ReadOnly;
+      QFile* f = new QFile(QString::fromStdString(filename.ToString()));
+      if (!f->open(modeCode)) {
+          qDebug() << "FileSystem::open - " << "Couldn't be opened:" << filename.ToString();
+          return false;
+      }
+      const auto fs = new File(f);
+      QString qs = fs->read();
+      retval = CefV8Value::CreateString(qs.toStdString());
+      fs->close();
+      delete fs;
+      return true;
+    } else if (name == "touch"){
+      const auto filename = arguments.at(0)->GetStringValue();
+      QFile* f = new QFile(QString::fromStdString(filename.ToString()));
+      if (!f->open(QFile::WriteOnly)) {
+    	  retval = CefV8Value::CreateBool(false);
+      } else {
+    	  retval = CefV8Value::CreateBool(true);
+      }
+      return true;
+    } else if (name == "makeDirectory"){
+      const auto path = arguments.at(0)->GetStringValue();
+      const auto fs = new FileSystem();
+      QVariant qv = fs->makeDirectory(QString::fromStdString(path.ToString()));
+      retval = CefV8Value::CreateString(qv.toString().toStdString());
+      delete fs;
+      return true;
+    } else if (name == "tempPath"){
+      //std::auto_ptr<FileSystem> fs(new FileSystem);
+      const auto fs = new FileSystem();
+      QString qs = fs->tmpPath();
+      retval = CefV8Value::CreateString(qs.toStdString());
+      delete fs;
+      return true;
+    } else if (name == "lastModified") {
+      const auto filename = arguments.at(0)->GetStringValue();
+      const auto fs = new FileSystem();
+      QVariant qv = fs->lastModified(QString::fromStdString(filename.ToString()));
+      retval = CefV8Value::CreateString(qv.toString().toStdString());
+      delete fs;
+      return true;
+    } else if (name == "exists") {
+      const auto filename = arguments.at(0)->GetStringValue();
+      const auto fs = new FileSystem();
+      QVariant qv = fs->exists(QString::fromStdString(filename.ToString()));
+      retval = CefV8Value::CreateString(qv.toString().toStdString());
+      delete fs;
+      return true;
+    } else if (name == "isFile") {
+      const auto filename = arguments.at(0)->GetStringValue();
+      const auto fs = new FileSystem();
+      QVariant qv = fs->isFile(QString::fromStdString(filename.ToString()));
+      retval = CefV8Value::CreateString(qv.toString().toStdString());
+      delete fs;
+      return true;
+    } else if (name == "isDirectory") {
+      const auto filename = arguments.at(0)->GetStringValue();
+      const auto fs = new FileSystem();
+      QVariant qv = fs->isDirectory(QString::fromStdString(filename.ToString()));
+      retval = CefV8Value::CreateString(qv.toString().toStdString());
+      delete fs;
+      return true;
+    } else if (name == "copy") {
+      const auto src = arguments.at(0)->GetStringValue();
+      const auto dest = arguments.at(1)->GetStringValue();
+      const auto fs = new FileSystem();
+      bool r = fs->copyRecursively(QString::fromStdString(src),QString::fromStdString(dest));
+      retval = CefV8Value::CreateBool(r);
+      delete fs;
+      return true;
+    } else if (name == "remove") {
+      const auto src = arguments.at(0)->GetStringValue();
+      const auto fs = new FileSystem();
+      bool r = fs->remove(QString::fromStdString(src));
+      retval = CefV8Value::CreateBool(r);
+      delete fs;
+      return true;
+    } else if (name == "size") {
+      const auto src = arguments.at(0)->GetStringValue();
+      const auto fs = new FileSystem();
+      int r = fs->_size(QString::fromStdString(src));
+      retval = CefV8Value::CreateInt(r);
+      delete fs;
+      return true;
+    } else if (name == "list") {
+      const auto filename = arguments.at(0)->GetStringValue();
+      const auto fs = new FileSystem();
+      QStringList qsl = fs->list(QString::fromStdString(filename.ToString()));
+      CefRefPtr<CefV8Value> arr = CefV8Value::CreateArray(qsl.size());
+      for (int n=0; n<qsl.size(); n++) {
+    	  arr->SetValue(n, CefV8Value::CreateString(qsl.at(n).toStdString()));
+      }
+      retval=arr;
+      delete fs;
       return true;
     }
     exception = std::string("Unknown PhantomJS function: ") + name.ToString();
