@@ -36,3 +36,5 @@ Makefile
 qrc_*
 *.depends
 CMakeFiles
+project_cef-prefix
+rel

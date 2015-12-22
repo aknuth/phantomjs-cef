@@ -165,6 +165,7 @@ public:
       }
       const auto fs = new File(f);
       fs->write(QString::fromStdString(s));
+      fs->flush();
       fs->close();
       delete fs;
       return true;

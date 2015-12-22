@@ -1,5 +1,6 @@
 "use strict";
 var page = require('webpage').create();
+var fs = require('fs');
 
 //page.libraryPath += "/libs"
 //page.viewportSize = { width: 1280, height: 2000 };
@@ -38,17 +39,17 @@ window.examineTree = function(jElm){
 //console.log(examineTree.toString());
 function doTheWork(i){
     return new Promise(function(resolve,reject){
-
         console.log('i:'+i);
-        //page.open('http://www.finanzen.net/aktien/aktien_suche.asp?intpagenr='+i+'&inbranche=0&inland=1&inbillanz=0&inbillanzjahr=2001&inbillanzgrkl=2&inindex=0&infunndagrkl1=2&infunndagrkl2=2&infundamental1=0&infundamentaljahr1=2013&infundamental2=0&infundamentaljahr2=2013&insonstige=0')
-        page.open('about:blank')
+        page.open('http://www.finanzen.net/aktien/aktien_suche.asp?intpagenr='+i+'&inbranche=0&inland=1&inbillanz=0&inbillanzjahr=2001&inbillanzgrkl=2&inindex=0&infunndagrkl1=2&infunndagrkl2=2&infundamental1=0&infundamentaljahr1=2013&infundamental2=0&infundamentaljahr2=2013&insonstige=0')
+        //page.open('about:blank')
          .then(function(){
              return page.injectJs("jquery.min.js");
          })
          .then(function() { 
-                 console.log("success!"); },
+                 console.log("success!")},
              function(error) { 
-                 console.log("fail :(\n" + error); 
+                 console.log("fail :(\n" + error);
+                 reject();
          })
          // .then(function(){
          //     return page.inject(examineTree);
@@ -92,23 +93,47 @@ function doTheWork(i){
         })
         .then(function() {
             console.log('rendered');
-            return page.render('alleaktien'+i+'.png');
+            return page.render('out/alleaktien'+i+'.png');
         })
         .then(function(){
-            console.log('I am ready');
-            resolve();
+        	return page.evaluate(function(){
+        		return new Promise(function (accept) {
+        			accept( $('html')[0].outerHTML);
+        		})
+        	})
         })
-
+        .then(function(html) {
+        	fs.write('out/stocks'+i+'.txt',html);
+        })
+        .then(function(){
+        	console.log('I am ready');
+        	resolve();
+        })
     })
-
 }
 
-var p = Promise.resolve();
-for (let i=5; i<=7; i++) {
-    p = p.then(() => doTheWork(i));
-}
-p.then(() => phantom.exit());
+let p = Promise.resolve();
 
-page.onPaint = function(dirtyRects, width, height, isPopup) {
-  //console.log("Paint event of width = " + width + ", height = " + height + "! Was a popup? " + isPopup + ", Dirty rects = " + JSON.stringify(dirtyRects, 1));
-};
+for (let i=1; i<=16; i++) {
+//let i = 1;
+//while ((let i=1) < 10) {
+	p = p.then(() => doTheWork(i));
+	//let i = 1;
+	//p = p.then(function() {
+		//return doTheWork(i);
+	//});
+}
+/**
+ * 
+
+let iterator = doTheWork();
+let current;
+
+do {
+  console.log(' ... '+JSON.stringify(current));
+  current = iterator.next();
+  console.log(JSON.stringify(current));
+} while (!current.done);
+ */
+//p.then(() => phantom.exit());
+
