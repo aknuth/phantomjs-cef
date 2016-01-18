@@ -19,6 +19,7 @@
 #include <QImage>
 #include <QBuffer>
 #include <QImageWriter>
+#include <QTime>
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
@@ -205,7 +206,8 @@ bool PhantomJSHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const Cef
     obj[QStringLiteral("args")] = jsonArgs;
     callback->Success(QJsonDocument(obj).toJson().constData());
   } else {
-    std::cerr << source << ':' << line << ": " << message << '\n';
+    //std::cerr << source << ':' << line << ": " << message << '\n';
+    std::cerr << QTime().currentTime().toString("hh:mm:ss.zzz").toStdString()<< ':' << QString::fromStdString(source).split("/").last().toStdString() << ':' << line << ": " << message << '\n';
   }
   return true;
 }
@@ -309,7 +311,17 @@ void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
   if (!callback) {
     return;
   }
-  callback->Success("{\"signal\":\"onLoadStarted\"}");
+  //qDebug() << "#### " << frame->GetURL();
+  //callback->Success("{\"signal\":\"onLoadStarted\",\"internal\":true,\"args\":["+frame->GetURL()+"]}");
+  //callback->Success("{\"signal\":\"onLoadStarted\",\"args\":["+frame->GetURL().+"]}");
+  QJsonArray jsonArgs;
+  jsonArgs.append(QString::fromStdString(frame->GetURL()));
+  QJsonObject data;
+  data[QStringLiteral("signal")] = QStringLiteral("onLoadStarted");
+  data[QStringLiteral("args")] = jsonArgs;
+  //qDebug() << "+++++ " << QJsonDocument(data).toJson().constData();
+  callback->Success(QJsonDocument(data).toJson().constData());
+
 }
 
 void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode)
@@ -317,12 +329,12 @@ void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFra
   CEF_REQUIRE_UI_THREAD();
 
   qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << frame->IsMain() << httpStatusCode;
-
   // filter out events from sub frames
   if (!frame->IsMain()) {
     return;
   }
 
+  //qDebug() << "~~~~ " << frame->GetURL() << " | "<< frame->GetIdentifier();
   /// TODO: is this OK?
   const bool success = httpStatusCode < 400;
   handleLoadEnd(browser, httpStatusCode, frame->GetURL(), success);
@@ -348,7 +360,9 @@ void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCo
     data[QStringLiteral("signal")] = QStringLiteral("onLoadEnd");
     data[QStringLiteral("internal")] = true;
     data[QStringLiteral("args")] = jsonArgs;
+    //qDebug() << "+++++ " << QJsonDocument(data).toJson().constData();
     callback->Success(QJsonDocument(data).toJson().constData());
+    //callback->Success(QJsonDocument(data).toJson().co);
   }
 
   while (auto callback = takeCallback(&m_waitForLoadedCallbacks, browser)) {

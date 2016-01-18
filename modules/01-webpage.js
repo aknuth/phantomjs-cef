@@ -81,7 +81,7 @@
       },
       onLoadEnd: function(url, success) {
         internal.url = url;
-        internal.dispatchSignal("onLoadFinished", [success ? "success" : "fail"]);
+        internal.dispatchSignal("onLoadFinished", [success ? "success" : "fail",url]);
       },
       signalWaiters: {}
     };
@@ -124,10 +124,12 @@
 
     this.onConsoleMessage = function(message, source, line) {
       native function printError();
-      printError(source + ":" + line + ": " + message);
+      var d = new Date();
+      var out = d.getHours()+":"+d.getMinutes()+":"+d.getSeconds()+'-'+d.getMilliseconds()
+      printError(out+ ":"+ source + ":" + line + ": " + message);
     };
-    this.onLoadStarted = function() {};
-    this.onLoadFinished = function(status) {};
+    this.onLoadStarted = function(url) {};
+    this.onLoadFinished = function(status,url) {};
     this.onPaint = function() {};
     this.onResourceRequested = function(requestData, networkRequest) {};
     this.onResourceReceived = function(response) {};
