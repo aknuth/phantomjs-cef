@@ -291,6 +291,17 @@
         browser: internal.id
       });
     };
+    this.download = function(source, target) {
+      return createBrowser().then(function() {
+        console.log("triggering download");
+          return phantom.internal.query({
+          type: 'download',
+          source: source,
+          target: target,
+          browser: internal.id
+        });
+      });
+    };
     this.injectJs = function(file) {
       verifyBrowserCreated();
       var path = phantom.internal.findLibrary(file, webpage.libraryPath);

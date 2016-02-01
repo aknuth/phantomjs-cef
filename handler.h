@@ -19,7 +19,8 @@ class PhantomJSHandler : public CefClient,
                       public CefLoadHandler,
                       public CefRenderHandler,
                       public CefRequestHandler,
-                      public CefMessageRouterBrowserSide::Handler
+                      public CefMessageRouterBrowserSide::Handler,
+                      public CefDownloadHandler
 {
  public:
   PhantomJSHandler();
@@ -49,6 +50,10 @@ class PhantomJSHandler : public CefClient,
     return this;
   }
   virtual CefRefPtr<CefRequestHandler> GetRequestHandler() override
+  {
+    return this;
+  }
+  CefRefPtr<CefDownloadHandler> GetDownloadHandler() override
   {
     return this;
   }
@@ -111,6 +116,15 @@ class PhantomJSHandler : public CefClient,
   void OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                        int64 query_id) override;
 
+  // CefDownloadHandler methods
+  void OnBeforeDownload(CefRefPtr<CefBrowser> browser,
+                        CefRefPtr<CefDownloadItem> download_item,
+                        const CefString& suggested_name,
+                        CefRefPtr<CefBeforeDownloadCallback> callback) override;
+  void OnDownloadUpdated(CefRefPtr<CefBrowser> browser,
+                         CefRefPtr<CefDownloadItem> download_item,
+                         CefRefPtr<CefDownloadItemCallback> callback) override;
+
   // Request that all existing browser windows close.
   void CloseAllBrowsers(bool force_close);
 
@@ -147,6 +161,13 @@ private:
     CefRefPtr<CefRequestCallback> callback;
   };
   QHash<uint64, RequestInfo> m_requestCallbacks;
+  struct DownloadTargetInfo
+  {
+    QString target;
+    CefRefPtr<CefMessageRouterBrowserSide::Callback> callback;
+  };
+  QHash<QString, DownloadTargetInfo> m_downloadTargets;
+  QHash<uint, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_downloadCallbacks;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);

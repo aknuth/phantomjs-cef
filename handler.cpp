@@ -819,10 +819,14 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
         }
       }
     } else if (event == QLatin1String("click") || event == QLatin1String("doubleclick")
-            || event == QLatin1String("mousedown") || event == QLatin1String("mouseup"))
+            || event == QLatin1String("mousedown") || event == QLatin1String("mouseup")
+            || event == QLatin1String("mousemove"))
     {
       CefMouseEvent mouseEvent;
       mouseEvent.modifiers = modifiers;
+      if (!modifiers) {
+        mouseEvent.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
+      }
       mouseEvent.x = json.value(QStringLiteral("arg1")).toDouble();
       mouseEvent.y = json.value(QStringLiteral("arg2")).toDouble();
       cef_mouse_button_type_t type = MBT_LEFT;
@@ -838,6 +842,8 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
       } else if (event == QLatin1String("click")) {
         subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, false, 1);
         subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, true, 1);
+      } else if (event == QLatin1String("mousemove")) {
+        subBrowser->GetHost()->SendMouseMoveEvent(mouseEvent, false);
       } else {
         subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, event == QLatin1String("mouseup"), 1);
       }
@@ -846,6 +852,12 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
       return true;
     }
     callback->Success({});
+    return true;
+  } else if (type == QLatin1String("download")) {
+    const auto source = json.value(QStringLiteral("source")).toString();
+    const auto target = json.value(QStringLiteral("target")).toString();
+    m_downloadTargets[source] = {target, callback};
+    subBrowser->GetHost()->StartDownload(source.toStdString());
     return true;
   }
   return false;
@@ -859,4 +871,34 @@ void PhantomJSHandler::OnQueryCanceled(CefRefPtr<CefBrowser> browser, CefRefPtr<
   m_waitForLoadedCallbacks.remove(browser->GetIdentifier());
   m_pendingQueryCallbacks.remove(query_id);
   m_paintCallbacks.remove(browser->GetIdentifier());
+}
+
+void PhantomJSHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item, const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback)
+{
+  const auto source = QString::fromStdString(download_item->GetOriginalUrl());
+  const auto target = m_downloadTargets.take(source);
+
+  qCDebug(handler) << browser->GetIdentifier() << source << target.target;
+
+  if (!target.callback) {
+    return;
+  }
+
+  m_downloadCallbacks[download_item->GetId()] = target.callback;
+  callback->Continue(target.target.toStdString(), false);
+}
+
+void PhantomJSHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item, CefRefPtr<CefDownloadItemCallback> /*callback*/)
+{
+  qCDebug(handler) << browser->GetIdentifier() << download_item->GetURL() << download_item->GetPercentComplete() << download_item->IsComplete() << download_item->IsCanceled() << download_item->IsInProgress();
+  if (!download_item->IsInProgress()) {
+    auto callback = m_downloadCallbacks.take(download_item->GetId());
+    if (callback) {
+      if (download_item->IsComplete()) {
+        callback->Success({});
+      } else {
+        callback->Failure(1, "Download failed.");
+      }
+    }
+  }
 }
