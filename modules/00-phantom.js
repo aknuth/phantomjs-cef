@@ -93,11 +93,20 @@ if (!phantom)
       run.then(function(retval) {
         // native DOM objects cannot be JSON.stringified directly
         // so instead copy the first level of data over
-        // TODO: extend depth at will, but make sure we don't fall into cycles
         function prepareJSONStringify(obj) {
           if (typeof(obj) !== "object" || obj === null) {
             return obj;
           }
+          // handle arrays
+          if (obj instanceof Array) {
+              copy = [];
+              for (var i = 0, len = obj.length; i < len; i++) {
+                  copy[i] = prepareJSONStringify(obj[i]);
+              }
+              return copy;
+          }
+          // objects
+          // TODO: extend depth at will, but make sure we don't fall into cycles
           var ret = {};
           for (var k in obj) {
             ret[k] = obj[k];

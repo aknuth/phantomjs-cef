@@ -17,6 +17,7 @@ window.addEventListener('keyup', logKey, true, true);
 window.addEventListener('keypress', logKey, true, true);
 window.addEventListener('mousedown', logKey, true, true);
 window.addEventListener('mouseup', logKey, true, true);
+window.addEventListener('mousemove', logKey, true, true);
 window.addEventListener('click', logKey, true, true);
 window.addEventListener('dblclick', logKey, true, true);
 

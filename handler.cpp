@@ -804,10 +804,14 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
         }
       }
     } else if (event == QLatin1String("click") || event == QLatin1String("doubleclick")
-            || event == QLatin1String("mousedown") || event == QLatin1String("mouseup"))
+            || event == QLatin1String("mousedown") || event == QLatin1String("mouseup")
+            || event == QLatin1String("mousemove"))
     {
       CefMouseEvent mouseEvent;
       mouseEvent.modifiers = modifiers;
+      if (!modifiers) {
+        mouseEvent.modifiers = EVENTFLAG_LEFT_MOUSE_BUTTON;
+      }
       mouseEvent.x = json.value(QStringLiteral("arg1")).toDouble();
       mouseEvent.y = json.value(QStringLiteral("arg2")).toDouble();
       cef_mouse_button_type_t type = MBT_LEFT;
@@ -823,6 +827,8 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
       } else if (event == QLatin1String("click")) {
         subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, false, 1);
         subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, true, 1);
+      } else if (event == QLatin1String("mousemove")) {
+        subBrowser->GetHost()->SendMouseMoveEvent(mouseEvent, false);
       } else {
         subBrowser->GetHost()->SendMouseClickEvent(mouseEvent, type, event == QLatin1String("mouseup"), 1);
       }

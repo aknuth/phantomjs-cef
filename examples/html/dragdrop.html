@@ -1,0 +1,31 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <script type="text/javascript">
+      function allowDrop(ev) {
+          console.log("allowDrop");
+          ev.preventDefault();
+      }
+
+      function drag(ev) {
+          console.log("drag");
+          ev.dataTransfer.setData("text", ev.target.id);
+      }
+
+      function drop(ev) {
+          console.log("drop");
+          ev.preventDefault();
+          var data = ev.dataTransfer.getData("text");
+          ev.target.appendChild(document.getElementById(data));
+      }
+
+    </script>
+  </head>
+  <body>
+    <div style="background: red; padding: 50px;">
+      <img id="dragme" src="http://phantomjs.org/img/phantomjs-logo.png" draggable="true" ondragstart="drag(event)" />
+    </div>
+    <div id ="dropme" ondrop="drop(event)" ondragover="allowDrop(event)" style="background: blue; padding: 50px;">
+    </div>
+  </body>
+</html>
