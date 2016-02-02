@@ -2,6 +2,21 @@
 # reserved. Use of this source code is governed by a BSD-style license that
 # can be found in the LICENSE file.
 
+cmake_minimum_required(VERSION 2.8.12.1)
+
+# Add cef as a subdirectory.
+add_subdirectory(cef)
+
+# Add cef variables to the current scope.
+get_directory_property(_CEF_VARS DIRECTORY cef VARIABLES)
+foreach(_CEF_VAR ${_CEF_VARS})
+    get_directory_property(${_CEF_VAR} DIRECTORY cef DEFINITION ${_CEF_VAR})
+endforeach()
+
+# Init project variables for PhantomJS-cef.
+PROJECT(PhantomJS-cef)
+include_directories(${PROJECT_SOURCE_DIR}/cef)
+
 find_package(Qt5 NO_MODULE REQUIRED COMPONENTS Gui PrintSupport)
 
 #
