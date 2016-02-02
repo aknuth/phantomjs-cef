@@ -228,18 +228,11 @@ bool PhantomJSHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 
 bool PhantomJSHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
 {
-  auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback;
-  if (callback) {
-    QJsonArray jsonArgs;
-    jsonArgs.append(QString::fromStdString(message));
-    jsonArgs.append(QString::fromStdString(source));
-    jsonArgs.append(line);
-    QJsonObject obj;
-    obj[QStringLiteral("signal")] = QStringLiteral("onConsoleMessage");
-    obj[QStringLiteral("args")] = jsonArgs;
-    callback->Success(QJsonDocument(obj).toJson().constData());
-  } else {
+  if (!canEmitSignal(browser)) {
     std::cerr << source << ':' << line << ": " << message << '\n';
+  } else {
+    emitSignal(browser, QStringLiteral("onConsoleMessage"),
+        {QString::fromStdString(message), QString::fromStdString(source), line});
   }
   return true;
 }
@@ -335,21 +328,37 @@ void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
   qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << isMain(frame);
 
   // filter out events from sub frames
-  if (!isMain(frame)) {
+  if (!isMain(frame) || !canEmitSignal(browser)) {
     return;
   }
 
+  emitSignal(browser, QStringLiteral("onLoadStarted"), {QString::fromStdString(frame->GetURL())});
+}
+
+void PhantomJSHandler::emitSignal(const CefRefPtr<CefBrowser>& browser, const QString& signal,
+                                  const QVarLengthArray<QJsonValue>& arguments, bool internal)
+{
   auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback;
   if (!callback) {
+    qDebug() << "no signal callback for browser" << browser->GetIdentifier() << signal;
     return;
   }
   QJsonArray jsonArgs;
-  jsonArgs.append(QString::fromStdString(frame->GetURL()));
+  for (auto&& arg : arguments) {
+    jsonArgs.append(arg);
+  }
   QJsonObject data;
-  data[QStringLiteral("signal")] = QStringLiteral("onLoadStarted");
+  data[QStringLiteral("signal")] = signal;
   data[QStringLiteral("args")] = jsonArgs;
+  if (internal) {
+    data[QStringLiteral("internal")] = true;
+  }
   callback->Success(QJsonDocument(data).toJson().constData());
+}
 
+bool PhantomJSHandler::canEmitSignal(const CefRefPtr<CefBrowser>& browser) const
+{
+  return m_browsers.value(browser->GetIdentifier()).signalCallback;
 }
 
 void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode)
@@ -382,16 +391,7 @@ void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCo
     browserInfo.firstLoadFinished = true;
     return;
   }
-  if (auto callback = browserInfo.signalCallback) {
-    QJsonArray jsonArgs;
-    jsonArgs.append(QString::fromStdString(url));
-    jsonArgs.append(success);
-    QJsonObject data;
-    data[QStringLiteral("signal")] = QStringLiteral("onLoadEnd");
-    data[QStringLiteral("internal")] = true;
-    data[QStringLiteral("args")] = jsonArgs;
-    callback->Success(QJsonDocument(data).toJson().constData());
-  }
+  emitSignal(browser, QStringLiteral("onLoadEnd"), {QString::fromStdString(url), success}, true);
 
   while (auto callback = takeCallback(&m_waitForLoadedCallbacks, browser)) {
     if (success) {
@@ -413,6 +413,11 @@ bool PhantomJSHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height)
 {
   qCDebug(handler) << browser->GetIdentifier() << type << width << height;
+
+  if (!canEmitSignal(browser)) {
+    return;
+  }
+
   auto info = takeCallback(&m_paintCallbacks, browser);
   if (info.callback) {
     QImage image(reinterpret_cast<const uchar*>(buffer), width, height, QImage::Format_ARGB32);
@@ -448,26 +453,18 @@ void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType t
       }
     }
   }
-  if (auto signalCallback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
-    QJsonArray jsonDirtyRects;
-    for (const auto& rect : dirtyRects) {
-      QJsonObject jsonRect;
-      jsonRect[QStringLiteral("x")] = rect.x;
-      jsonRect[QStringLiteral("y")] = rect.y;
-      jsonRect[QStringLiteral("width")] = rect.width;
-      jsonRect[QStringLiteral("height")] = rect.height;
-      jsonDirtyRects.push_back(jsonRect);
-    }
-    QJsonArray jsonArgs;
-    jsonArgs.append(jsonDirtyRects);
-    jsonArgs.append(width);
-    jsonArgs.append(height);
-    jsonArgs.append(type);
-    QJsonObject data;
-    data[QStringLiteral("signal")] = QStringLiteral("onPaint");
-    data[QStringLiteral("args")] = jsonArgs;
-    signalCallback->Success(QJsonDocument(data).toJson().constData());
+
+  QJsonArray jsonDirtyRects;
+  for (const auto& rect : dirtyRects) {
+    QJsonObject jsonRect;
+    jsonRect[QStringLiteral("x")] = rect.x;
+    jsonRect[QStringLiteral("y")] = rect.y;
+    jsonRect[QStringLiteral("width")] = rect.width;
+    jsonRect[QStringLiteral("height")] = rect.height;
+    jsonDirtyRects.push_back(jsonRect);
   }
+
+  emitSignal(browser, QStringLiteral("onPaint"), {jsonDirtyRects, width, height, type});
 }
 
 void PhantomJSHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status)
@@ -496,8 +493,7 @@ QJsonObject headerMapToJson(const CefRefPtr<T>& r)
 CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                                    CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
 {
-  auto signalCallback = m_browsers.value(browser->GetIdentifier()).signalCallback;
-  if (!signalCallback) {
+  if (!canEmitSignal(browser)) {
     return RV_CONTINUE;
   }
 
@@ -540,22 +536,16 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
 
   m_requestCallbacks[request->GetIdentifier()] = {request, callback};
 
-  QJsonArray jsonArgs;
-  jsonArgs.append(jsonRequest);
-  jsonArgs.append(QString::number(request->GetIdentifier()));
-  QJsonObject data;
-  data[QStringLiteral("signal")] = QStringLiteral("onBeforeResourceLoad");
-  data[QStringLiteral("args")] = jsonArgs;
-  data[QStringLiteral("internal")] = true;
-  signalCallback->Success(QJsonDocument(data).toJson().constData());
+  emitSignal(browser, QStringLiteral("onBeforeResourceLoad"),
+             {jsonRequest, QString::number(request->GetIdentifier())}, true);
+
   return RV_CONTINUE_ASYNC;
 }
 
 bool PhantomJSHandler::OnResourceResponse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame,
                                           CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response)
 {
-  auto signalCallback = m_browsers.value(browser->GetIdentifier()).signalCallback;
-  if (signalCallback) {
+  if (canEmitSignal(browser)) {
     QJsonObject jsonResponse;
     jsonResponse[QStringLiteral("status")] = response->GetStatus();
     jsonResponse[QStringLiteral("statusText")] = QString::fromStdString(response->GetStatusText());
@@ -563,13 +553,8 @@ bool PhantomJSHandler::OnResourceResponse(CefRefPtr<CefBrowser> browser, CefRefP
     jsonResponse[QStringLiteral("headers")] = headerMapToJson(response);
     jsonResponse[QStringLiteral("url")] = QString::fromStdString(request->GetURL());
     jsonResponse[QStringLiteral("id")] = QString::number(request->GetIdentifier());
-      /// TODO: time, stage, bodySize, redirectUrl
-    QJsonArray jsonArgs;
-    jsonArgs.append(jsonResponse);
-    QJsonObject data;
-    data[QStringLiteral("signal")] = QStringLiteral("onResourceReceived");
-    data[QStringLiteral("args")] = jsonArgs;
-    signalCallback->Success(QJsonDocument(data).toJson().constData());
+    /// TODO: time, stage, bodySize, redirectUrl
+    emitSignal(browser, QStringLiteral("onResourceReceived"), {jsonResponse});
   }
   return false;
 }
@@ -934,17 +919,12 @@ void PhantomJSHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr
   if (!target.callback) {
     // not a manually triggered page.download() call but an indirect one
     // call back to the user script to ask for a download location
-    if (auto signalCallback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
-      m_beforeDownloadCallbacks[download_item->GetId()] = callback;
-      QJsonArray jsonArgs;
-      jsonArgs.append(QString::number(download_item->GetId()));
-      jsonArgs.append(QString::fromStdString(download_item->GetOriginalUrl()));
-      QJsonObject data;
-      data[QStringLiteral("signal")] = QStringLiteral("onBeforeDownload");
-      data[QStringLiteral("args")] = jsonArgs;
-      data[QStringLiteral("internal")] = true;
-      signalCallback->Success(QJsonDocument(data).toJson().constData());
-    }
+    m_beforeDownloadCallbacks[download_item->GetId()] = callback;
+
+    emitSignal(browser, QStringLiteral("onBeforeDownload"), {
+                QString::number(download_item->GetId()),
+                QString::fromStdString(download_item->GetOriginalUrl())
+              }, true);
     return;
   }
 
@@ -959,16 +939,8 @@ void PhantomJSHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPt
   m_downloadItemCallbacks[download_item->GetId()] = callback;
   const auto jsonDownloadItem = toJson(download_item);
 
-  if (auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
-    QJsonArray jsonArgs;
-    jsonArgs.append(QString::number(download_item->GetId()));
-    jsonArgs.append(jsonDownloadItem);
-    QJsonObject data;
-    data[QStringLiteral("signal")] = QStringLiteral("onDownloadUpdated");
-    data[QStringLiteral("args")] = jsonArgs;
-    data[QStringLiteral("internal")] = true;
-    callback->Success(QJsonDocument(data).toJson().constData());
-  }
+  emitSignal(browser, QStringLiteral("onDownloadUpdated"),
+             {QString::number(download_item->GetId()), jsonDownloadItem}, true);
 
   if (!download_item->IsInProgress()) {
     QByteArray data;

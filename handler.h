@@ -12,6 +12,7 @@
 #include <QHash>
 #include <QRect>
 #include <QJsonObject>
+#include <QVarLengthArray>
 
 class PhantomJSHandler : public CefClient,
                       public CefDisplayHandler,
@@ -129,6 +130,9 @@ class PhantomJSHandler : public CefClient,
   void CloseAllBrowsers(bool force_close);
 
 private:
+  bool canEmitSignal(const CefRefPtr<CefBrowser>& browser) const;
+  void emitSignal(const CefRefPtr<CefBrowser>& browser, const QString& signal,
+                  const QVarLengthArray<QJsonValue>& arguments, bool internal = false);
   void handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, const CefString& url, bool success);
 
   // List of existing browser windows. Only accessed on the CEF UI thread.
