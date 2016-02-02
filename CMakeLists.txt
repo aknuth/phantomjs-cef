@@ -10,11 +10,13 @@ add_subdirectory(cef)
 # Add cef variables to the current scope.
 get_directory_property(_CEF_VARS DIRECTORY cef VARIABLES)
 foreach(_CEF_VAR ${_CEF_VARS})
+  if (NOT _CEF_VAR MATCHES "^CMAKE_CURRENT_")
     get_directory_property(${_CEF_VAR} DIRECTORY cef DEFINITION ${_CEF_VAR})
+  endif()
 endforeach()
 
 # Init project variables for PhantomJS-cef.
-PROJECT(PhantomJS-cef)
+project(PhantomJS-cef)
 include_directories(${PROJECT_SOURCE_DIR}/cef)
 
 find_package(Qt5 NO_MODULE REQUIRED COMPONENTS Gui PrintSupport)
