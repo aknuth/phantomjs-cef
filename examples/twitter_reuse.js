@@ -15,8 +15,8 @@ page.onLoadFinished = function(status) {
   console.log("load finished: " + status);
 };
 
-page.onLoadStarted = function() {
-  console.log("load started");
+page.onLoadStarted = function(url) {
+  console.log("load started: " + url);
 }
 
 function follow(user, callback) {

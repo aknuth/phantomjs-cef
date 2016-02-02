@@ -343,7 +343,13 @@ void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
   if (!callback) {
     return;
   }
-  callback->Success("{\"signal\":\"onLoadStarted\"}");
+  QJsonArray jsonArgs;
+  jsonArgs.append(QString::fromStdString(frame->GetURL()));
+  QJsonObject data;
+  data[QStringLiteral("signal")] = QStringLiteral("onLoadStarted");
+  data[QStringLiteral("args")] = jsonArgs;
+  callback->Success(QJsonDocument(data).toJson().constData());
+
 }
 
 void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode)
