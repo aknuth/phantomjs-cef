@@ -4,6 +4,10 @@
 
 cmake_minimum_required(VERSION 2.8.12.1)
 
+if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cef")
+  message(FATAL_ERROR "The `cef` subfolder is missing. Download CEF from https://cefbuilds.com/ and extract its contents to `${CMAKE_CURRENT_SOURCE_DIR}/cef`.")
+endif()
+
 # Add cef as a subdirectory.
 add_subdirectory(cef)
 
