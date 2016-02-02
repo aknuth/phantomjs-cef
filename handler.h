@@ -167,7 +167,10 @@ private:
     CefRefPtr<CefMessageRouterBrowserSide::Callback> callback;
   };
   QHash<QString, DownloadTargetInfo> m_downloadTargets;
+  QHash<uint, CefRefPtr<CefBeforeDownloadCallback>> m_beforeDownloadCallbacks;
+  QHash<uint, CefRefPtr<CefDownloadItemCallback>> m_downloadItemCallbacks;
   QHash<uint, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_downloadCallbacks;
+  QMultiHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_waitForDownloadCallbacks;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);

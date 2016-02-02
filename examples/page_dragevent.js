@@ -15,7 +15,6 @@ page.open("file://" + page.libraryPath + "/html/dragdrop.html")
     return page.evaluate(function() {
       var ret = [document.querySelector("#dragme").getBoundingClientRect(),
               document.querySelector("#dropme").getBoundingClientRect()];
-//       console.log(JSON.stringify(ret[0].top));
       return ret;
     });
   })

@@ -18,6 +18,7 @@
 #include <QImage>
 #include <QBuffer>
 #include <QImageWriter>
+#include <QDateTime>
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
@@ -31,6 +32,15 @@
 #include "keyevents.h"
 
 namespace {
+
+/**
+ * Workaround an issue where the frame's IsMain property is not updated to
+ * reflect the actual main frame set in the browser.
+ */
+bool isMain(const CefRefPtr<CefFrame>& frame)
+{
+  return frame->IsMain() || frame->GetIdentifier() == frame->GetBrowser()->GetMainFrame()->GetIdentifier();
+}
 
 template<typename T, typename K>
 T takeCallback(QHash<K, T>* callbacks, K key)
@@ -142,6 +152,31 @@ void printValue(const CefString& key, const CefRefPtr<CefValue>& value) {
   }
 }
 
+QJsonObject toJson(const CefRefPtr<CefDownloadItem>& item)
+{
+  QJsonObject object;
+  object[QStringLiteral("isInProgress")] = item->IsInProgress();
+  object[QStringLiteral("isComplete")] = item->IsComplete();
+  object[QStringLiteral("isCanceled")] = item->IsCanceled();
+  if (!item->GetSuggestedFileName().empty()) {
+    object[QStringLiteral("suggestedFileName")] = QString::fromStdString(item->GetSuggestedFileName());
+  }
+  object[QStringLiteral("fullPath")] = QString::fromStdString(item->GetFullPath());
+  object[QStringLiteral("url")] = QString::fromStdString(item->GetURL());
+  object[QStringLiteral("originalUrl")] = QString::fromStdString(item->GetOriginalUrl());
+  object[QStringLiteral("mimeType")] = QString::fromStdString(item->GetMimeType());
+  object[QStringLiteral("contentDisposition")] = QString::fromStdString(item->GetContentDisposition());
+  object[QStringLiteral("totalBytes")] = static_cast<qint64>(item->GetTotalBytes());
+  object[QStringLiteral("receivedBytes")] = static_cast<qint64>(item->GetReceivedBytes());
+  object[QStringLiteral("currentSpeed")] = static_cast<qint64>(item->GetCurrentSpeed());
+  object[QStringLiteral("percentComplete")] = item->GetPercentComplete();
+  object[QStringLiteral("startTime")] = QDateTime::fromTime_t(item->GetStartTime().GetTimeT()).toUTC().toString(Qt::ISODate);
+  if (item->GetEndTime().GetTimeT()) {
+    // this was always invalid in my tests
+    object[QStringLiteral("endTime")] = QDateTime::fromTime_t(item->GetEndTime().GetTimeT()).toUTC().toString(Qt::ISODate);
+  }
+  return object;
+}
 }
 
 PhantomJSHandler::PhantomJSHandler()
@@ -274,9 +309,9 @@ void PhantomJSHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
 {
   CEF_REQUIRE_UI_THREAD();
 
-  qCDebug(handler) << browser->GetIdentifier() << frame->IsMain() << errorCode << errorText << failedUrl;
+  qCDebug(handler) << browser->GetIdentifier() << isMain(frame) << errorCode << errorText << failedUrl;
 
-  if (frame->IsMain()) {
+  if (isMain(frame)) {
     handleLoadEnd(browser, errorCode, failedUrl, false);
   }
 
@@ -297,10 +332,10 @@ void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
 {
   CEF_REQUIRE_UI_THREAD();
 
-  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << frame->IsMain();
+  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << isMain(frame);
 
   // filter out events from sub frames
-  if (!frame->IsMain()) {
+  if (!isMain(frame)) {
     return;
   }
 
@@ -315,10 +350,10 @@ void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFra
 {
   CEF_REQUIRE_UI_THREAD();
 
-  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << frame->IsMain() << httpStatusCode;
+  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << isMain(frame) << httpStatusCode;
 
   // filter out events from sub frames
-  if (!frame->IsMain()) {
+  if (!isMain(frame)) {
     return;
   }
 
@@ -334,6 +369,8 @@ void PhantomJSHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool 
 
 void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, const CefString& url, bool success)
 {
+  qCDebug(handler) << browser->GetIdentifier() << statusCode << url << success;
+
   auto& browserInfo = m_browsers[browser->GetIdentifier()];
   if (!browserInfo.firstLoadFinished) {
     browserInfo.firstLoadFinished = true;
@@ -573,6 +610,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
 
   QJsonParseError error;
   const auto json = QJsonDocument::fromJson(data, &error).object();
+  qCDebug(handler) << json;
   if (error.error) {
     qCWarning(handler) << error.errorString();
     return false;
@@ -627,6 +665,25 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     // TODO: post support
     callback.callback->Continue(true);
     return true;
+  } else if (type == QLatin1String("beforeDownloadResponse")) {
+    const auto requestId = static_cast<uint64>(json.value(QStringLiteral("requestId")).toString().toULongLong());
+    const auto target = json.value(QStringLiteral("target")).toString().toStdString();
+    auto callback = m_beforeDownloadCallbacks.take(requestId);
+    if (!callback) {
+      qCWarning(handler) << "Unknown request with id" << requestId << "for query" << json;
+      return false;
+    }
+    callback->Continue(target, false);
+    return true;
+  } else if (type == QLatin1String("cancelDownload")) {
+    const auto requestId = static_cast<uint64>(json.value(QStringLiteral("requestId")).toString().toULongLong());
+    auto callback = m_downloadItemCallbacks.take(requestId);
+    if (!callback) {
+      qCWarning(handler) << "Unknown request with id" << requestId << "for query" << json;
+      return false;
+    }
+    callback->Cancel();
+    return true;
   }
 
   const auto subBrowserId = json.value(QStringLiteral("browser")).toInt(-1);
@@ -649,6 +706,9 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     return true;
   } else if (type == QLatin1String("waitForLoaded")) {
     m_waitForLoadedCallbacks.insert(subBrowser->GetIdentifier(), callback);
+    return true;
+  } else if (type == QLatin1String("waitForDownload")) {
+    m_waitForDownloadCallbacks.insert(subBrowser->GetIdentifier(), callback);
     return true;
   } else if (type == QLatin1String("stopWebPage")) {
     subBrowser->StopLoad();
@@ -866,6 +926,19 @@ void PhantomJSHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr
   qCDebug(handler) << browser->GetIdentifier() << source << target.target;
 
   if (!target.callback) {
+    // not a manually triggered page.download() call but an indirect one
+    // call back to the user script to ask for a download location
+    if (auto signalCallback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
+      m_beforeDownloadCallbacks[download_item->GetId()] = callback;
+      QJsonArray jsonArgs;
+      jsonArgs.append(QString::number(download_item->GetId()));
+      jsonArgs.append(QString::fromStdString(download_item->GetOriginalUrl()));
+      QJsonObject data;
+      data[QStringLiteral("signal")] = QStringLiteral("onBeforeDownload");
+      data[QStringLiteral("args")] = jsonArgs;
+      data[QStringLiteral("internal")] = true;
+      signalCallback->Success(QJsonDocument(data).toJson().constData());
+    }
     return;
   }
 
@@ -873,16 +946,47 @@ void PhantomJSHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr
   callback->Continue(target.target.toStdString(), false);
 }
 
-void PhantomJSHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item, CefRefPtr<CefDownloadItemCallback> /*callback*/)
+void PhantomJSHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item, CefRefPtr<CefDownloadItemCallback> callback)
 {
   qCDebug(handler) << browser->GetIdentifier() << download_item->GetURL() << download_item->GetPercentComplete() << download_item->IsComplete() << download_item->IsCanceled() << download_item->IsInProgress();
+
+  m_downloadItemCallbacks[download_item->GetId()] = callback;
+  const auto jsonDownloadItem = toJson(download_item);
+
+  if (auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback) {
+    QJsonArray jsonArgs;
+    jsonArgs.append(QString::number(download_item->GetId()));
+    jsonArgs.append(jsonDownloadItem);
+    QJsonObject data;
+    data[QStringLiteral("signal")] = QStringLiteral("onDownloadUpdated");
+    data[QStringLiteral("args")] = jsonArgs;
+    data[QStringLiteral("internal")] = true;
+    callback->Success(QJsonDocument(data).toJson().constData());
+  }
+
   if (!download_item->IsInProgress()) {
+    QByteArray data;
+    std::string errorMessage;
+    if (download_item->IsCanceled()) {
+      errorMessage = "Download of " + download_item->GetURL().ToString() + " canceled.";
+    } else if (!download_item->IsComplete()) {
+      errorMessage = "Download of " + download_item->GetURL().ToString() + " ailed.";
+    } else {
+       data = QJsonDocument(jsonDownloadItem).toJson();
+    }
     auto callback = m_downloadCallbacks.take(download_item->GetId());
     if (callback) {
-      if (download_item->IsComplete()) {
-        callback->Success({});
+      if (errorMessage.empty()) {
+        callback->Success(data.constData());
       } else {
-        callback->Failure(1, "Download failed.");
+        callback->Failure(download_item->IsCanceled() ? 0 : 1, errorMessage);
+      }
+    }
+    while (auto callback = takeCallback(&m_waitForDownloadCallbacks, browser)) {
+      if (errorMessage.empty()) {
+        callback->Success(data.constData());
+      } else {
+        callback->Failure(download_item->IsCanceled() ? 0 : 1, errorMessage);
       }
     }
   }
