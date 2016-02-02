@@ -1,0 +1,13 @@
+var fs = require('fs');
+var path = fs.tempPath() + "/phantomjs";
+console.log(path);
+fs.makeDirectory(path);
+var file = path + '/gg';
+fs.touch(file);
+console.log(fs.exists(file));
+console.log(fs.isFile(file));
+console.log(fs.isDirectory(path));
+fs.write(file, "blub");
+console.log('size of gg:'+fs.size(file));
+fs.remove(path);
+phantom.exit();
