@@ -54,6 +54,7 @@ target_link_libraries(${CEF_TARGET}
 )
 
 if (OS_WINDOWS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -EHsc -Wv:18")
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
       set(d "")
     else() # Debug build
@@ -70,6 +71,7 @@ if (OS_WINDOWS)
       "${_qt5Core_install_prefix}/plugins/platforms/qwindows${d}.lib"
       "Ws2_32.lib"
       "Imm32.lib"
+      "Winmm.lib"
     )
 endif()
 
