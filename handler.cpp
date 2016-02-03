@@ -243,6 +243,7 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 
   m_browsers[browser->GetIdentifier()].browser = browser;
 
+#if CEF_COMMIT_NUMBER > 1333 // TODO: find correct commit number that adds this
   if (PRINT_SETTINGS) {
     auto prefs = browser->GetHost()->GetRequestContext()->GetAllPreferences(true);
     CefDictionaryValue::KeyList keys;
@@ -251,6 +252,7 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
       printValue(key, prefs->GetValue(key));
     }
   }
+#endif
 
   qCDebug(handler) << browser->GetIdentifier();
 }

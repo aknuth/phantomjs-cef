@@ -245,7 +245,7 @@ void PrintHandler::OnPrintSettings(CefRefPtr<CefPrintSettings> settings, bool ge
   qCDebug(print) << get_defaults;
 }
 
-#if CEF_COMMIT_NUMBER > 1332 // TODO: find correct commit number that adds this
+#if CEF_COMMIT_NUMBER > 1333 // TODO: find correct commit number that adds this
 void PrintHandler::OnPrintStart(CefRefPtr<CefBrowser> browser)
 {
   qCDebug(print) << "!";
