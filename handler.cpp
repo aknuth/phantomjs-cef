@@ -19,6 +19,8 @@
 #include <QBuffer>
 #include <QImageWriter>
 #include <QDateTime>
+#include <QFileInfo>
+#include <QMessageLogger>
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
@@ -229,7 +231,8 @@ bool PhantomJSHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
 bool PhantomJSHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, const CefString& message, const CefString& source, int line)
 {
   if (!canEmitSignal(browser)) {
-    std::cerr << source << ':' << line << ": " << message << '\n';
+    auto shortSource = QFileInfo(QString::fromStdString(source)).fileName().toStdString();
+    QMessageLogger(shortSource.c_str(), line, 0).debug() << message;
   } else {
     emitSignal(browser, QStringLiteral("onConsoleMessage"),
         {QString::fromStdString(message), QString::fromStdString(source), line});
