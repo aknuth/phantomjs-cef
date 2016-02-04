@@ -23,7 +23,7 @@ endforeach()
 project(PhantomJS-cef)
 include_directories(${PROJECT_SOURCE_DIR}/cef)
 
-find_package(Qt5 NO_MODULE REQUIRED COMPONENTS Gui PrintSupport)
+find_package(Qt5 NO_MODULE REQUIRED COMPONENTS Gui)
 
 #
 # Source files.
@@ -71,7 +71,6 @@ target_link_libraries(${CEF_TARGET}
   libcef_dll_wrapper
   ${CEF_STANDARD_LIBS}
   Qt5::Gui
-  Qt5::PrintSupport
 )
 
 if (OS_WINDOWS)

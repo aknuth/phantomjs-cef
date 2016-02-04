@@ -7,12 +7,13 @@
 #include "debug.h"
 
 #include <QRect>
+#include <QPageSize>
 
 #include <algorithm>
 
-QPrinter::PaperSize paperSizeForName(const QString& name)
+QPageSize::PageSizeId pageSizeIdForName(const QString& name)
 {
-  // NOTE: Must keep in sync with QPrinter::PaperSize
+  // NOTE: Must keep in sync with QPageSize::PageSizeId
   static const QString sizeNames[] = {
     // Existing Qt sizes
     QStringLiteral("A4"),
@@ -154,28 +155,28 @@ QPrinter::PaperSize paperSizeForName(const QString& name)
   auto it = std::find_if(std::begin(sizeNames), std::end(sizeNames), [name] (const QString& size) {
     return !name.compare(size, Qt::CaseInsensitive);
   });
-
   if (it != std::end(sizeNames)) {
-    auto distance = std::distance(std::begin(sizeNames), it);
-    if (distance <= QPrinter::NPageSize) {
-      return static_cast<QPrinter::PaperSize>(distance);
-    }
+    return static_cast<QPageSize::PageSizeId>(std::distance(std::begin(sizeNames), it));
   }
-#if QT_VERSION >= 0x050300
-  // Convenience overloads for naming consistency
+
   if (!name.compare(QLatin1String("AnsiA"), Qt::CaseInsensitive))
-    return QPrinter::AnsiA;
+    return QPageSize::AnsiA;
   if (!name.compare(QLatin1String("AnsiB"), Qt::CaseInsensitive))
-    return QPrinter::AnsiB;
+    return QPageSize::AnsiB;
   if (!name.compare(QLatin1String("EnvelopeC5"), Qt::CaseInsensitive))
-    return QPrinter::EnvelopeC5;
+    return QPageSize::EnvelopeC5;
   if (!name.compare(QLatin1String("EnvelopeDL"), Qt::CaseInsensitive))
-    return QPrinter::EnvelopeDL;
+    return QPageSize::EnvelopeDL;
   if (!name.compare(QLatin1String("Envelope10"), Qt::CaseInsensitive))
-    return QPrinter::Envelope10;
-#endif
+    return QPageSize::Envelope10;
+
   qCWarning(print) << "Unknown page size:" << name << "defaulting to A4.";
-  return QPrinter::A4;
+  return QPageSize::A4;
+}
+
+QPageSize pageSizeForName(const QString& name)
+{
+  return QPageSize(pageSizeIdForName(name));
 }
 
 #define PHANTOMJS_PDF_DPI 72.0f
@@ -216,10 +217,8 @@ int stringToMillimeter(const QString& string)
 CefSize PrintHandler::GetPdfPaperSize(int device_units_per_inch)
 {
   // this is just a default, we configure the size via CefPdfPrintSettings in handler.cpp
-  QPrinter printer;
-  printer.setResolution(device_units_per_inch);
-  printer.setPaperSize(QPrinter::A4);
-  auto rect = printer.paperSize(QPrinter::DevicePixel);
+  QPageSize page(QPageSize::A4);
+  auto rect = page.rectPixels(device_units_per_inch);
   return CefSize(rect.width(), rect.height());
 }
 

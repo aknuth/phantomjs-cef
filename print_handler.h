@@ -9,9 +9,10 @@
 
 #include "include/cef_version.h"
 
-#include <QPrinter>
+class QPageSize;
+class QString;
 
-QPrinter::PaperSize paperSizeForName(const QString& name);
+QPageSize pageSizeForName(const QString& name);
 float stringToPointSize(const QString& string);
 int stringToMillimeter(const QString& string);
 
