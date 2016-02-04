@@ -458,11 +458,12 @@ void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType t
 
   QJsonArray jsonDirtyRects;
   for (const auto& rect : dirtyRects) {
-    QJsonObject jsonRect;
-    jsonRect[QStringLiteral("x")] = rect.x;
-    jsonRect[QStringLiteral("y")] = rect.y;
-    jsonRect[QStringLiteral("width")] = rect.width;
-    jsonRect[QStringLiteral("height")] = rect.height;
+    QJsonObject jsonRect = {
+      {QStringLiteral("x"), rect.x},
+      {QStringLiteral("y"), rect.y},
+      {QStringLiteral("width"), rect.width},
+      {QStringLiteral("height"), rect.height}
+    };
     jsonDirtyRects.push_back(jsonRect);
   }
 
@@ -504,8 +505,7 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
     CefPostData::ElementVector elements;
     post->GetElements(elements);
     for (const auto& element : elements) {
-      QJsonObject elementJson;
-      elementJson[QStringLiteral("type")] = element->GetType();
+      QJsonObject elementJson = {{QStringLiteral("type"), element->GetType()}};
       switch (element->GetType()) {
         case PDE_TYPE_BYTES: {
           QByteArray bytes;
