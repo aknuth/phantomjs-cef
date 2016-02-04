@@ -341,20 +341,17 @@ void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
 }
 
 void PhantomJSHandler::emitSignal(const CefRefPtr<CefBrowser>& browser, const QString& signal,
-                                  const QVarLengthArray<QJsonValue>& arguments, bool internal)
+                                  const QJsonArray& arguments, bool internal)
 {
   auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback;
   if (!callback) {
     qDebug() << "no signal callback for browser" << browser->GetIdentifier() << signal;
     return;
   }
-  QJsonArray jsonArgs;
-  for (auto&& arg : arguments) {
-    jsonArgs.append(arg);
-  }
-  QJsonObject data;
-  data[QStringLiteral("signal")] = signal;
-  data[QStringLiteral("args")] = jsonArgs;
+  QJsonObject data = {
+    {QStringLiteral("signal"), signal},
+    {QStringLiteral("args"), arguments}
+  };
   if (internal) {
     data[QStringLiteral("internal")] = true;
   }
