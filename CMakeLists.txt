@@ -76,7 +76,7 @@ target_link_libraries(${CEF_TARGET}
 
 if (OS_WINDOWS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -EHsc")
-    if(MSVC15)
+    if(MSVC14)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wv:18")
     endif()
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
