@@ -13,7 +13,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QPrinter>
+#include <QPageSize>
 #include <QRect>
 #include <QImage>
 #include <QBuffer>
@@ -341,20 +341,17 @@ void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
 }
 
 void PhantomJSHandler::emitSignal(const CefRefPtr<CefBrowser>& browser, const QString& signal,
-                                  const QVarLengthArray<QJsonValue>& arguments, bool internal)
+                                  const QJsonArray& arguments, bool internal)
 {
   auto callback = m_browsers.value(browser->GetIdentifier()).signalCallback;
   if (!callback) {
     qDebug() << "no signal callback for browser" << browser->GetIdentifier() << signal;
     return;
   }
-  QJsonArray jsonArgs;
-  for (auto&& arg : arguments) {
-    jsonArgs.append(arg);
-  }
-  QJsonObject data;
-  data[QStringLiteral("signal")] = signal;
-  data[QStringLiteral("args")] = jsonArgs;
+  QJsonObject data = {
+    {QStringLiteral("signal"), signal},
+    {QStringLiteral("args"), arguments}
+  };
   if (internal) {
     data[QStringLiteral("internal")] = true;
   }
@@ -461,11 +458,12 @@ void PhantomJSHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType t
 
   QJsonArray jsonDirtyRects;
   for (const auto& rect : dirtyRects) {
-    QJsonObject jsonRect;
-    jsonRect[QStringLiteral("x")] = rect.x;
-    jsonRect[QStringLiteral("y")] = rect.y;
-    jsonRect[QStringLiteral("width")] = rect.width;
-    jsonRect[QStringLiteral("height")] = rect.height;
+    QJsonObject jsonRect = {
+      {QStringLiteral("x"), rect.x},
+      {QStringLiteral("y"), rect.y},
+      {QStringLiteral("width"), rect.width},
+      {QStringLiteral("height"), rect.height}
+    };
     jsonDirtyRects.push_back(jsonRect);
   }
 
@@ -507,8 +505,7 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
     CefPostData::ElementVector elements;
     post->GetElements(elements);
     for (const auto& element : elements) {
-      QJsonObject elementJson;
-      elementJson[QStringLiteral("type")] = element->GetType();
+      QJsonObject elementJson = {{QStringLiteral("type"), element->GetType()}};
       switch (element->GetType()) {
         case PDE_TYPE_BYTES: {
           QByteArray bytes;
@@ -770,15 +767,15 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     if (!paperSize.value(QStringLiteral("orientation")).toString().compare("landscape", Qt::CaseInsensitive)) {
       settings.landscape = true;
     }
-    QPrinter printer;
+    QPageSize pageSize;
     if (paperSize.contains(QStringLiteral("format"))) {
-      printer.setPaperSize(paperSizeForName(paperSize.value(QStringLiteral("format")).toString()));
+      pageSize = pageSizeForName(paperSize.value(QStringLiteral("format")).toString());
     } else if (paperSize.contains(QStringLiteral("width")) && paperSize.contains(QStringLiteral("height"))) {
       auto width = stringToPointSize(paperSize.value(QStringLiteral("width")).toString());
       auto height = stringToPointSize(paperSize.value(QStringLiteral("height")).toString());
-      printer.setPaperSize({width, height}, QPrinter::Point);
+      pageSize = QPageSize(QSize(width, height), QPageSize::Point);
     }
-    auto rect = printer.paperSize(QPrinter::Millimeter);
+    auto rect = pageSize.rect(QPageSize::Millimeter);
     settings.page_height = rect.height() * 1000;
     settings.page_width = rect.width() * 1000;
 
@@ -807,7 +804,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
       settings.margin_right = stringToMillimeter(marginObject.value(QStringLiteral("right")).toString());
       settings.margin_bottom = stringToMillimeter(marginObject.value(QStringLiteral("bottom")).toString());
     }
-    qCDebug(print) << paperSize << printer.paperSize() << settings.page_height << settings.page_width << "landscape:" << settings.landscape
+    qCDebug(print) << paperSize << pageSize.name() << settings.page_height << settings.page_width << "landscape:" << settings.landscape
                     << "margins:"<< settings.margin_bottom << settings.margin_left << settings.margin_top << settings.margin_right << "margin type:" << settings.margin_type;
     subBrowser->GetHost()->PrintToPDF(path, settings, makePdfPrintCallback([callback] (const CefString& path, bool success) {
       if (success) {
