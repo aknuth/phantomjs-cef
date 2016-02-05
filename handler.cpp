@@ -109,6 +109,7 @@ void initBrowserSettings(CefBrowserSettings& browser_settings, bool isPhantomMai
   }
 }
 
+#if CHROME_VERSION_BUILD >= 2526
 const bool PRINT_SETTINGS = false;
 
 void printValue(const CefString& key, const CefRefPtr<CefValue>& value) {
@@ -153,6 +154,7 @@ void printValue(const CefString& key, const CefRefPtr<CefValue>& value) {
       break;
   }
 }
+#endif
 
 QJsonObject toJson(const CefRefPtr<CefDownloadItem>& item)
 {
@@ -246,7 +248,7 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 
   m_browsers[browser->GetIdentifier()].browser = browser;
 
-#if CEF_COMMIT_NUMBER > 1333 // TODO: find correct commit number that adds this
+#if CHROME_VERSION_BUILD >= 2526
   if (PRINT_SETTINGS) {
     auto prefs = browser->GetHost()->GetRequestContext()->GetAllPreferences(true);
     CefDictionaryValue::KeyList keys;
