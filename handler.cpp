@@ -21,6 +21,7 @@
 #include <QDateTime>
 #include <QFileInfo>
 #include <QMessageLogger>
+#include <QUrl>
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
@@ -698,8 +699,10 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
     Q_ASSERT(persistent);
     return true;
   } else if (type == QLatin1String("openWebPage")) {
-    const auto url = json.value(QStringLiteral("url")).toString().toStdString();
-    subBrowser->GetMainFrame()->LoadURL(url);
+    const auto url = QUrl::fromUserInput(json.value(QStringLiteral("url")).toString(),
+                                         json.value(QStringLiteral("libraryPath")).toString(),
+                                         QUrl::AssumeLocalFile);
+    subBrowser->GetMainFrame()->LoadURL(url.toString().toStdString());
     m_waitForLoadedCallbacks.insert(subBrowser->GetIdentifier(), callback);
     return true;
   } else if (type == QLatin1String("waitForLoaded")) {

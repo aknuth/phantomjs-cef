@@ -13,7 +13,7 @@ page.onResourceReceived = function(data) {
   console.log("RESOURCE RECEIVED: " + JSON.stringify(data, 1));
 };
 
-page.open("file://" + page.libraryPath + "/html/loadresourceerror.html")
+page.open("html/loadresourceerror.html")
   .then(function() {
     console.log("Finished!");
   }, function(error) {

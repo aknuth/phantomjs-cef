@@ -7,7 +7,7 @@ page.onConsoleMessage = function(message) {
   console.log(message);
 }
 
-page.open("file://" + page.libraryPath + "/html/dragdrop.html")
+page.open("html/dragdrop.html")
   .then(function() {
     return page.injectJs("libs/keylogger.js");
   })

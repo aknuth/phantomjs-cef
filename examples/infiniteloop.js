@@ -1,6 +1,6 @@
 var page = new phantom.WebPage;
 
-page.open("file://" + page.libraryPath + "/html/infiniteloop.html")
+page.open("html/infiniteloop.html")
   .then(function() {
     console.log("Finished!");
   }, function(error) {

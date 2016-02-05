@@ -173,6 +173,7 @@
         return phantom.internal.query({
           type: "openWebPage",
           url: url,
+          libraryPath: webpage.libraryPath,
           browser: internal.id})
       });
       // TODO: this is just a workaround as it won't catch timeouts
