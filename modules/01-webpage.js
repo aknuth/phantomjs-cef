@@ -26,7 +26,7 @@
 */
 
 (function() {
-  phantom.WebPage = function() {
+  phantom.WebPage = function(popupId) {
     var webpage = this;
     Object.defineProperty(webpage, "url", {
       get: function() {
@@ -112,8 +112,40 @@
           });
         }
       },
+      onPopupCreated: function(browserId) {
+        var popup = new phantom.WebPage(browserId);
+        internal.dispatchSignal("onPopupCreated", [popup]);
+      },
       signalWaiters: {}
     };
+    function initialize(id) {
+      internal.id = id;
+      // send current values of some properties
+      webpage.viewportSize = internal.viewportSize;
+      webpage.zoomFactor = internal.zoomFactor;
+      startPhantomJsQuery({
+        request: JSON.stringify({
+          type: 'webPageSignals',
+          browser: internal.id
+        }),
+        persistent: true,
+        onSuccess: function(response) {
+          var response = JSON.parse(response);
+          if (!response.internal) {
+            internal.dispatchSignal(response.signal, response.args);
+          } else {
+            internal[response.signal].apply(webpage, response.args);
+          }
+        },
+        onFailure: function() {}
+      });
+    }
+    if (popupId) {
+      // this webpage got created from the onPopupCreated signal handler,
+      // there is already a fully initialized browser on the other side
+      internal.createBrowser = new Promise(function(resolve) { resolve(); });
+      initialize(popupId);
+    }
     function verifyBrowserCreated() {
       if (!internal.id) {
         throw new Error("No page has been loaded. The function " + verifyBrowserCreated.caller + " must be called after the first page load event.");
@@ -126,26 +158,7 @@
           settings: webpage.settings
         })
         .then(function(response) {
-          internal.id = parseInt(response);
-          // send current values of some properties
-          webpage.viewportSize = internal.viewportSize;
-          webpage.zoomFactor = internal.zoomFactor;
-          startPhantomJsQuery({
-            request: JSON.stringify({
-              type: 'webPageSignals',
-              browser: internal.id
-            }),
-            persistent: true,
-            onSuccess: function(response) {
-              var response = JSON.parse(response);
-              if (!response.internal) {
-                internal.dispatchSignal(response.signal, response.args);
-              } else {
-                internal[response.signal].apply(webpage, response.args);
-              }
-            },
-            onFailure: function() {}
-          });
+          initialize(parseInt(response));
         });
       }
       return internal.createBrowser;
@@ -163,6 +176,7 @@
     // TODO: onResourceTimeout
     this.onDownloadUpdated = function(downloadItem) {};
     this.onBeforeDownload = function(downloadRequest) {};
+    this.onPopupCreated = function(popup) {};
     this.waitForSignal = function(signal) {
       return new Promise(function(resolve) {
         internal.signalWaiters[signal] = resolve;

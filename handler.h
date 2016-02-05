@@ -8,11 +8,10 @@
 #include "include/cef_client.h"
 #include "include/wrapper/cef_message_router.h"
 
-#include <vector>
+#include <QQueue>
 #include <QHash>
 #include <QRect>
 #include <QJsonObject>
-#include <QVarLengthArray>
 
 class PhantomJSHandler : public CefClient,
                       public CefDisplayHandler,
@@ -175,6 +174,9 @@ private:
   QHash<uint, CefRefPtr<CefDownloadItemCallback>> m_downloadItemCallbacks;
   QHash<uint, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_downloadCallbacks;
   QMultiHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_waitForDownloadCallbacks;
+
+  // maps the requested popup url to the parent browser id
+  QQueue<uint> m_popupToParentMapping;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);

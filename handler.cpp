@@ -247,7 +247,15 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
 
-  m_browsers[browser->GetIdentifier()].browser = browser;
+  auto& browserInfo = m_browsers[browser->GetIdentifier()];
+  browserInfo.browser = browser;
+  if (!m_popupToParentMapping.isEmpty()) {
+    auto parentBrowser = m_popupToParentMapping.dequeue();
+    // we don't open about:blank for popups
+    browserInfo.firstLoadFinished = true;
+    emitSignal(m_browsers.value(parentBrowser).browser, QStringLiteral("onPopupCreated"),
+               {browser->GetIdentifier()}, true);
+  }
 
 #if CHROME_VERSION_BUILD >= 2526
   if (PRINT_SETTINGS) {
@@ -296,9 +304,12 @@ bool PhantomJSHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<Ce
                                      bool* no_javascript_access)
 {
   qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << target_url << target_frame_name;
+  // TODO: inherit settings? manipulate?
   initWindowInfo(windowInfo, false);
   initBrowserSettings(settings, false, {});
   client = this;
+  // TODO: is it enough to assume the next browser that will be created belongs to this popup request?
+  m_popupToParentMapping << browser->GetIdentifier();
   return false;
 }
 
