@@ -393,7 +393,10 @@ void PhantomJSHandler::handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCo
     browserInfo.firstLoadFinished = true;
     return;
   }
-  emitSignal(browser, QStringLiteral("onLoadEnd"), {QString::fromStdString(url), success}, true);
+
+  if (canEmitSignal(browser)) {
+    emitSignal(browser, QStringLiteral("onLoadEnd"), {QString::fromStdString(url), success}, true);
+  }
 
   while (auto callback = takeCallback(&m_waitForLoadedCallbacks, browser)) {
     if (success) {
