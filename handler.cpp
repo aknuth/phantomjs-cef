@@ -247,6 +247,8 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
 
+  qCDebug(handler) << browser->GetIdentifier();
+
   auto& browserInfo = m_browsers[browser->GetIdentifier()];
   browserInfo.browser = browser;
   if (!m_popupToParentMapping.isEmpty()) {
@@ -267,8 +269,6 @@ void PhantomJSHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
     }
   }
 #endif
-
-  qCDebug(handler) << browser->GetIdentifier();
 }
 
 bool PhantomJSHandler::DoClose(CefRefPtr<CefBrowser> browser)
@@ -517,6 +517,8 @@ CefRequestHandler::ReturnValue PhantomJSHandler::OnBeforeResourceLoad(CefRefPtr<
     return RV_CONTINUE;
   }
 
+  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << request->GetURL();
+
   QJsonArray jsonPost;
   if (const auto post = request->GetPostData()) {
     CefPostData::ElementVector elements;
@@ -620,7 +622,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
 
   QJsonParseError error;
   const auto json = QJsonDocument::fromJson(data, &error).object();
-  qCDebug(handler) << json;
+  qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << json;
   if (error.error) {
     qCWarning(handler) << error.errorString();
     return false;
