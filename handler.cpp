@@ -347,7 +347,7 @@ void PhantomJSHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
   qCDebug(handler) << browser->GetIdentifier() << frame->GetURL() << isMain(frame);
 
   // filter out events from sub frames
-  if (!isMain(frame) || !canEmitSignal(browser)) {
+  if (!isMain(frame) || !canEmitSignal(browser) || !m_browsers.value(browser->GetIdentifier()).firstLoadFinished) {
     return;
   }
 
