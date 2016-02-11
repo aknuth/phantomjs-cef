@@ -8,7 +8,7 @@
 #include "include/cef_client.h"
 #include "include/wrapper/cef_message_router.h"
 
-#include <vector>
+#include <QQueue>
 #include <QHash>
 #include <QRect>
 #include <QJsonObject>
@@ -129,6 +129,9 @@ class PhantomJSHandler : public CefClient,
   void CloseAllBrowsers(bool force_close);
 
 private:
+  bool canEmitSignal(const CefRefPtr<CefBrowser>& browser) const;
+  void emitSignal(const CefRefPtr<CefBrowser>& browser, const QString& signal,
+                  const QJsonArray& arguments, bool internal = false);
   void handleLoadEnd(CefRefPtr<CefBrowser> browser, int statusCode, const CefString& url, bool success);
 
   // List of existing browser windows. Only accessed on the CEF UI thread.
@@ -167,7 +170,13 @@ private:
     CefRefPtr<CefMessageRouterBrowserSide::Callback> callback;
   };
   QHash<QString, DownloadTargetInfo> m_downloadTargets;
+  QHash<uint, CefRefPtr<CefBeforeDownloadCallback>> m_beforeDownloadCallbacks;
+  QHash<uint, CefRefPtr<CefDownloadItemCallback>> m_downloadItemCallbacks;
   QHash<uint, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_downloadCallbacks;
+  QMultiHash<int32, CefRefPtr<CefMessageRouterBrowserSide::Callback>> m_waitForDownloadCallbacks;
+
+  // maps the requested popup url to the parent browser id
+  QQueue<uint> m_popupToParentMapping;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(PhantomJSHandler);

@@ -1,46 +1,29 @@
 # Copyright (c) 2015 Klaralvdalens Datakonsult AB (KDAB).
 # reserved. Use of this source code is governed by a BSD-style license that
 # can be found in the LICENSE file.
-cmake_minimum_required(VERSION 2.8)
-project (phantomjs)
-set(CMAKE_BUILD_TYPE Release)
-include(ExternalProject)
-#message(MYOPT " " ${MyOption})
-find_package(Qt5 NO_MODULE REQUIRED COMPONENTS Gui PrintSupport)
 
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
-  set(OS_MACOSX 1)
-  set(OS_POSIX 1)
-elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-  set(OS_LINUX 1)
-  set(OS_POSIX 1)
-elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-  set(OS_WINDOWS 1)
+cmake_minimum_required(VERSION 2.8.12.1)
+
+if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cef")
+  message(FATAL_ERROR "The `cef` subfolder is missing. Download CEF from https://cefbuilds.com/ and extract its contents to `${CMAKE_CURRENT_SOURCE_DIR}/cef`.")
 endif()
 
+# Add cef as a subdirectory.
+add_subdirectory(cef)
 
-# Copy a list of files from one directory to another. Relative files paths are maintained.
-macro(COPY_FILES target file_list source_dir target_dir)
-  foreach(FILENAME ${file_list})
-    set(source_file ${source_dir}/${FILENAME})
-    set(target_file ${target_dir}/${FILENAME})
-    if(IS_DIRECTORY ${source_file})
-      add_custom_command(
-        TARGET ${target}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${source_file}" "${target_file}"
-        VERBATIM
-        )
-    else()
-      add_custom_command(
-        TARGET ${target}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${source_file}" "${target_file}"
-        VERBATIM
-        )
-    endif()
-  endforeach()
-endmacro()
+# Add cef variables to the current scope.
+get_directory_property(_CEF_VARS DIRECTORY cef VARIABLES)
+foreach(_CEF_VAR ${_CEF_VARS})
+  if (NOT _CEF_VAR MATCHES "^CMAKE_CURRENT_")
+    get_directory_property(${_CEF_VAR} DIRECTORY cef DEFINITION ${_CEF_VAR})
+  endif()
+endforeach()
+
+# Init project variables for PhantomJS-cef.
+project(PhantomJS-cef)
+include_directories(${PROJECT_SOURCE_DIR}/cef)
+
+find_package(Qt5 NO_MODULE REQUIRED COMPONENTS Gui)
 
 #
 # Source files.
@@ -175,15 +158,39 @@ SET(BUILD_SHARED_LIBRARIES OFF)
 #SET(CMAKE_EXE_LINKER_FLAGS "-static")
 # Executable target.
 add_executable(${CEF_TARGET} ${PHANTOMJS_SRCS})
-
-ExternalProject_Add(project_cef
-  URL file://~/Downloads/cef_binary_3.2556.1356.g9bc8da1_linux64.7z
-  #URL https://cefbuilds.s3.amazonaws.com/trunk/linux64/48.0.2556.304f01a1/cef_binary_3.2556.1364.gbd6e656_linux64.7z
-  INSTALL_COMMAND ""
+add_dependencies(${CEF_TARGET} libcef_dll_wrapper)
+message(STATUS "${_qt5Core_install_prefix}")
+target_link_libraries(${CEF_TARGET}
+  libcef_lib
+  libcef_dll_wrapper
+  ${CEF_STANDARD_LIBS}
+  Qt5::Gui
 )
 
-ExternalProject_Get_Property(project_cef install_dir)
-#ExternalProject_Get_Property(project_cef CEF_BINARY_FILES)
+if (OS_WINDOWS)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -EHsc")
+    if(MSVC14)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wv:18")
+    endif()
+    if (CMAKE_BUILD_TYPE STREQUAL "Release")
+      set(d "")
+    else() # Debug build
+      set(d "d")
+    endif()
+    if (NOT EXISTS "${_qt5Core_install_prefix}/lib/qtharfbuzzng${d}.lib")
+      message(FATAL_ERROR "PhantomJS only supports building on Windows against a static Qt configured with -static -static-runtime!")
+    endif()
+    target_link_libraries(${CEF_TARGET}
+      "${_qt5Core_install_prefix}/lib/qtharfbuzzng${d}.lib"
+      "${_qt5Core_install_prefix}/lib/qtpcre${d}.lib"
+      "${_qt5Core_install_prefix}/lib/qtfreetype${d}.lib"
+      "${_qt5Core_install_prefix}/lib/Qt5PlatformSupport${d}.lib"
+      "${_qt5Core_install_prefix}/plugins/platforms/qwindows${d}.lib"
+      "Ws2_32.lib"
+      "Imm32.lib"
+      "Winmm.lib"
+    )
+endif()
 
 add_library(libcef_dll_wrapper STATIC IMPORTED)
 set_property(TARGET libcef_dll_wrapper PROPERTY IMPORTED_LOCATION ${install_dir}/src/project_cef-build/libcef_dll/libcef_dll_wrapper.a)

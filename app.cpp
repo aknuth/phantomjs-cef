@@ -6,6 +6,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QDateTime>
 
 #include <string>
 #include <iostream>
@@ -114,6 +115,63 @@ std::string readFile(const std::string& filePath)
   return contents;
 }
 
+bool writeFile(const std::string& filePath, const std::string& contents, const std::string& m)
+{
+  std::ios_base::openmode mode = std::ios_base::out;
+  if (m.find('b') != std::string::npos || m.find('B') != std::string::npos) {
+    mode |= std::ios_base::binary;
+  }
+  if (m.find('a') != std::string::npos || m.find('A') != std::string::npos || m.find('+') != std::string::npos) {
+    mode |= std::ios_base::app;
+  } else {
+    mode |= std::ios_base::trunc;
+  }
+  std::ofstream out(filePath, mode);
+  if (out) {
+    out << contents;
+    return true;
+  }
+  return false;
+}
+
+bool remove(const QString& path)
+{
+  QFileInfo info(path);
+  if (info.isDir()){
+    QDir dir(path);
+    return dir.removeRecursively();
+  }
+  QFile f(path);
+  return f.remove();
+}
+
+bool copyRecursively(const QString &srcFilePath, const QString &tgtFilePath)
+{
+  QFileInfo srcFileInfo(srcFilePath);
+  if (srcFileInfo.isDir()) {
+    if (!QDir().mkpath(tgtFilePath)) {
+      return false;
+    }
+
+    QDir sourceDir(srcFilePath);
+    QDir::Filters sourceDirFilter = QDir::NoDotAndDotDot | QDir::AllEntries | QDir::NoSymLinks | QDir::Hidden;
+    foreach (const QFileInfo& entry, sourceDir.entryInfoList(sourceDirFilter, QDir::DirsFirst)) {
+      const QString destination = tgtFilePath + '/' + entry.fileName();
+      if (!copyRecursively(entry.absoluteFilePath(), destination)) {
+        return false;
+      }
+    }
+    return true;
+  } else {
+    QFileInfo tgtFileInfo(tgtFilePath);
+    QFileInfo srcFileInfo(srcFilePath);
+    if (tgtFileInfo.isDir()){
+      return copyRecursively(srcFilePath, tgtFilePath + '/' + srcFileInfo.fileName());
+    }
+    return QFile::copy(srcFilePath, tgtFilePath);
+  }
+}
+
 class V8Handler : public CefV8Handler
 {
 public:
@@ -139,133 +197,77 @@ public:
       const auto libraryPath = QString::fromStdString(arguments.at(1)->GetStringValue());
       retval = CefV8Value::CreateString(findLibrary(filePath, libraryPath));
       return true;
-    } else if (name == "readFile") {
-      const auto file = arguments.at(0)->GetStringValue();
-      retval = CefV8Value::CreateString(readFile(file));
-      return true;
     } else if (name == "executeJavaScript") {
       const auto code = arguments.at(0)->GetStringValue();
       const auto file = arguments.at(1)->GetStringValue();
       context->GetFrame()->ExecuteJavaScript(code, "file://" + file.ToString(), 1);
       return true;
-//##########################################################################################################
-// FileSystem Functions
-//##########################################################################################################
     } else if (name == "write") {
       const auto filename = arguments.at(0)->GetStringValue();
-      const auto s = arguments.at(1)->GetStringValue();
-      const auto m =  QString::fromStdString(arguments.at(2)->GetStringValue()).isEmpty()?"W":arguments.at(2)->GetStringValue();
-      //qDebug() << QString::fromStdString(m)+" --> "+QString::compare(QString::fromStdString(m),"W",Qt::CaseInsensitive);
-      QFile::OpenMode modeCode = QString::compare(QString::fromStdString(m),QString::fromStdString("W"),Qt::CaseInsensitive)==0 ?QFile::WriteOnly:QFile::Append;
-      QFile* f = new QFile(QString::fromStdString(filename.ToString()));
-      if (!f->open(modeCode)) {
-          delete f;
-          qDebug() << "FileSystem::open - " << "Couldn't be opened:" << filename.ToString();
-          return false;
-      }
-      const auto fs = new File(f);
-      fs->write(QString::fromStdString(s));
-      fs->flush();
-      fs->close();
-      delete fs;
+      const auto contents = arguments.at(1)->GetStringValue();
+      const auto mode = arguments.at(2)->GetStringValue();
+      retval = CefV8Value::CreateBool(writeFile(filename, contents, mode));
       return true;
-    } else if (name == "read") {
-      const auto filename = arguments.at(0)->GetStringValue();
-      QFile::OpenMode modeCode = QFile::ReadOnly;
-      QFile* f = new QFile(QString::fromStdString(filename.ToString()));
-      if (!f->open(modeCode)) {
-          qDebug() << "FileSystem::open - " << "Couldn't be opened:" << filename.ToString();
-          return false;
-      }
-      const auto fs = new File(f);
-      QString qs = fs->read();
-      retval = CefV8Value::CreateString(qs.toStdString());
-      fs->close();
-      delete fs;
+    } else if (name == "read" || name == "readFile") {
+      const auto file = arguments.at(0)->GetStringValue();
+      retval = CefV8Value::CreateString(readFile(file));
       return true;
     } else if (name == "touch"){
       const auto filename = arguments.at(0)->GetStringValue();
-      QFile* f = new QFile(QString::fromStdString(filename.ToString()));
-      if (!f->open(QFile::WriteOnly)) {
-    	  retval = CefV8Value::CreateBool(false);
-      } else {
-    	  retval = CefV8Value::CreateBool(true);
-      }
+      QFile f(QString::fromStdString(filename.ToString()));
+      retval = CefV8Value::CreateBool(!f.open(QFile::WriteOnly));
       return true;
     } else if (name == "makeDirectory"){
       const auto path = arguments.at(0)->GetStringValue();
-      const auto fs = new FileSystem();
-      QVariant qv = fs->makeDirectory(QString::fromStdString(path.ToString()));
-      retval = CefV8Value::CreateString(qv.toString().toStdString());
-      delete fs;
+      retval = CefV8Value::CreateBool(QDir().mkdir(QString::fromStdString(path.ToString())));
+      return true;
+    } else if (name == "makeTree"){
+      const auto path = arguments.at(0)->GetStringValue();
+      retval = CefV8Value::CreateBool(QDir().mkpath(QString::fromStdString(path.ToString())));
       return true;
     } else if (name == "tempPath"){
-      //std::auto_ptr<FileSystem> fs(new FileSystem);
-      const auto fs = new FileSystem();
-      QString qs = fs->tmpPath();
-      retval = CefV8Value::CreateString(qs.toStdString());
-      delete fs;
+      retval = CefV8Value::CreateString(QDir::tempPath().toStdString());
       return true;
     } else if (name == "lastModified") {
       const auto filename = arguments.at(0)->GetStringValue();
-      const auto fs = new FileSystem();
-      QVariant qv = fs->lastModified(QString::fromStdString(filename.ToString()));
-      retval = CefV8Value::CreateString(qv.toString().toStdString());
-      delete fs;
+      auto lastModified = QFileInfo(QString::fromStdString(filename.ToString())).lastModified();
+      retval = CefV8Value::CreateString(lastModified.toUTC().toString(Qt::ISODate).toStdString());
       return true;
     } else if (name == "exists") {
       const auto filename = arguments.at(0)->GetStringValue();
-      const auto fs = new FileSystem();
-      QVariant qv = fs->exists(QString::fromStdString(filename.ToString()));
-      retval = CefV8Value::CreateString(qv.toString().toStdString());
-      delete fs;
+      retval = CefV8Value::CreateBool(QFile::exists(QString::fromStdString(filename.ToString())));
       return true;
     } else if (name == "isFile") {
       const auto filename = arguments.at(0)->GetStringValue();
-      const auto fs = new FileSystem();
-      QVariant qv = fs->isFile(QString::fromStdString(filename.ToString()));
-      retval = CefV8Value::CreateString(qv.toString().toStdString());
-      delete fs;
+      retval = CefV8Value::CreateBool(QFileInfo(QString::fromStdString(filename.ToString())).isFile());
       return true;
     } else if (name == "isDirectory") {
       const auto filename = arguments.at(0)->GetStringValue();
-      const auto fs = new FileSystem();
-      QVariant qv = fs->isDirectory(QString::fromStdString(filename.ToString()));
-      retval = CefV8Value::CreateString(qv.toString().toStdString());
-      delete fs;
+      retval = CefV8Value::CreateBool(QFileInfo(QString::fromStdString(filename.ToString())).isDir());
       return true;
     } else if (name == "copy") {
       const auto src = arguments.at(0)->GetStringValue();
       const auto dest = arguments.at(1)->GetStringValue();
-      const auto fs = new FileSystem();
-      bool r = fs->copyRecursively(QString::fromStdString(src),QString::fromStdString(dest));
+      bool r = copyRecursively(QString::fromStdString(src), QString::fromStdString(dest));
       retval = CefV8Value::CreateBool(r);
-      delete fs;
       return true;
     } else if (name == "remove") {
       const auto src = arguments.at(0)->GetStringValue();
-      const auto fs = new FileSystem();
-      bool r = fs->remove(QString::fromStdString(src));
+      bool r = remove(QString::fromStdString(src));
       retval = CefV8Value::CreateBool(r);
-      delete fs;
       return true;
     } else if (name == "size") {
-      const auto src = arguments.at(0)->GetStringValue();
-      const auto fs = new FileSystem();
-      int r = fs->_size(QString::fromStdString(src));
-      retval = CefV8Value::CreateInt(r);
-      delete fs;
+      const auto filename = arguments.at(0)->GetStringValue();
+      retval = CefV8Value::CreateInt(QFileInfo(QString::fromStdString(filename.ToString())).size());
       return true;
     } else if (name == "list") {
-      const auto filename = arguments.at(0)->GetStringValue();
-      const auto fs = new FileSystem();
-      QStringList qsl = fs->list(QString::fromStdString(filename.ToString()));
-      CefRefPtr<CefV8Value> arr = CefV8Value::CreateArray(qsl.size());
-      for (int n=0; n<qsl.size(); n++) {
-    	  arr->SetValue(n, CefV8Value::CreateString(qsl.at(n).toStdString()));
+      const auto path = arguments.at(0)->GetStringValue();
+      const auto entries = QDir(QString::fromStdString(path)).entryList();
+      CefRefPtr<CefV8Value> arr = CefV8Value::CreateArray(entries.size());
+      for (int n = 0; n < entries.size(); n++) {
+        arr->SetValue(n, CefV8Value::CreateString(entries.at(n).toStdString()));
       }
-      retval=arr;
-      delete fs;
+      retval = arr;
       return true;
     }
     exception = std::string("Unknown PhantomJS function: ") + name.ToString();

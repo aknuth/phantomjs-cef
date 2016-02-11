@@ -83,6 +83,7 @@ int inner_main(int argc, char** argv)
   settings.ignore_certificate_errors = true;
   settings.remote_debugging_port = 12345;
   settings.windowless_rendering_enabled = true;
+  // NOTE: accessing the file system requires us to disable sandboxing
   settings.no_sandbox = true;
 
   const auto cachePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);

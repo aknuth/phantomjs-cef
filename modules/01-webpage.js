@@ -26,7 +26,7 @@
 */
 
 (function() {
-  phantom.WebPage = function() {
+  phantom.WebPage = function(popupId) {
     var webpage = this;
     Object.defineProperty(webpage, "url", {
       get: function() {
@@ -83,8 +83,69 @@
         internal.url = url;
         internal.dispatchSignal("onLoadFinished", [success ? "success" : "fail",url]);
       },
+      onBeforeDownload: function(requestId, url) {
+        var target;
+        var downloadRequest = {
+          source: url,
+          setTarget: function(t) {
+            target = t;
+          },
+        };
+        internal.dispatchSignal("onBeforeDownload", [downloadRequest]);
+        phantom.internal.query({
+          type: "beforeDownloadResponse",
+          requestId: requestId,
+          target: target,
+        });
+      },
+      onDownloadUpdated: function(requestId, downloadItem) {
+        var cancel = false;
+        // TODO: resume/pause?
+        downloadItem.cancel = function() {
+          cancel = true;
+        };
+        internal.dispatchSignal("onDownloadUpdated", [downloadItem]);
+        if (cancel) {
+          phantom.internal.query({
+            type: "cancelDownload",
+            requestId: requestId,
+          });
+        }
+      },
+      onPopupCreated: function(browserId) {
+        var popup = new phantom.WebPage(browserId);
+        internal.dispatchSignal("onPopupCreated", [popup]);
+      },
       signalWaiters: {}
     };
+    function initialize(id) {
+      internal.id = id;
+      // send current values of some properties
+      webpage.viewportSize = internal.viewportSize;
+      webpage.zoomFactor = internal.zoomFactor;
+      startPhantomJsQuery({
+        request: JSON.stringify({
+          type: 'webPageSignals',
+          browser: internal.id
+        }),
+        persistent: true,
+        onSuccess: function(response) {
+          var response = JSON.parse(response);
+          if (!response.internal) {
+            internal.dispatchSignal(response.signal, response.args);
+          } else {
+            internal[response.signal].apply(webpage, response.args);
+          }
+        },
+        onFailure: function() {}
+      });
+    }
+    if (popupId) {
+      // this webpage got created from the onPopupCreated signal handler,
+      // there is already a fully initialized browser on the other side
+      internal.createBrowser = new Promise(function(resolve) { resolve(); });
+      initialize(popupId);
+    }
     function verifyBrowserCreated() {
       if (!internal.id) {
         throw new Error("No page has been loaded. The function " + verifyBrowserCreated.caller + " must be called after the first page load event.");
@@ -97,26 +158,7 @@
           settings: webpage.settings
         })
         .then(function(response) {
-          internal.id = parseInt(response);
-          // send current values of some properties
-          webpage.viewportSize = internal.viewportSize;
-          webpage.zoomFactor = internal.zoomFactor;
-          startPhantomJsQuery({
-            request: JSON.stringify({
-              type: 'webPageSignals',
-              browser: internal.id
-            }),
-            persistent: true,
-            onSuccess: function(response) {
-              var response = JSON.parse(response);
-              if (!response.internal) {
-                internal.dispatchSignal(response.signal, response.args);
-              } else {
-                internal[response.signal].apply(webpage, response.args);
-              }
-            },
-            onFailure: function() {}
-          });
+          initialize(parseInt(response));
         });
       }
       return internal.createBrowser;
@@ -134,6 +176,9 @@
     this.onResourceRequested = function(requestData, networkRequest) {};
     this.onResourceReceived = function(response) {};
     // TODO: onResourceTimeout
+    this.onDownloadUpdated = function(downloadItem) {};
+    this.onBeforeDownload = function(downloadRequest) {};
+    this.onPopupCreated = function(popup) {};
     this.waitForSignal = function(signal) {
       return new Promise(function(resolve) {
         internal.signalWaiters[signal] = resolve;
@@ -144,6 +189,7 @@
         return phantom.internal.query({
           type: "openWebPage",
           url: url,
+          libraryPath: webpage.libraryPath,
           browser: internal.id})
       });
       // TODO: this is just a workaround as it won't catch timeouts
@@ -175,6 +221,14 @@
       return createBrowser().then(function() {
         return phantom.internal.query({
           type: "waitForLoaded",
+          browser: internal.id
+        });
+      });
+    };
+    this.waitForDownload = function() {
+      return createBrowser().then(function() {
+        return phantom.internal.query({
+          type: "waitForDownload",
           browser: internal.id
         });
       });
@@ -293,12 +347,13 @@
     };
     this.download = function(source, target) {
       return createBrowser().then(function() {
-        console.log("triggering download");
-          return phantom.internal.query({
+        return phantom.internal.query({
           type: 'download',
           source: source,
           target: target,
           browser: internal.id
+        }).then(function(downloadItem) {
+          return JSON.parse(downloadItem);
         });
       });
     };

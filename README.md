@@ -4,18 +4,10 @@ Can we implement PhantomJS on top of CEF? It looks like it!
 
 ## Setup
 
-Clone this repository into a CEF root folder. Then, add the cloned folder as a
-sub directory in the top-level CMakeLists.txt of CEF, e.g.:
+Clone this repository, then copy/link/move a CEF build folder into this folder.
+The folder must be called `cef`. You can download CEF from https://cefbuilds.com/.
 
-    ...
-    add_subdirectory(libcef_dll)
-    add_subdirectory(cefclient)
-    add_subdirectory(cefsimple)
-    # this is what you need to add
-    add_subdirectory(phantomjs-cef)
-    ...
-
-Now you are ready to compile phantomjs-cef:
+Once you have a build in the `cef` folder, you are ready to compile phantomjs-cef:
 
     mkdir build
     cd build
@@ -25,7 +17,7 @@ Now you are ready to compile phantomjs-cef:
     ./phantomjs-cef/phantomjs ../phantomjs-cef/examples/test.js
 
 I tested it against the 64bit builds of CEF in branches 2454 and 2526 for Linux
-and Windows. You can download CEF from: https://cefbuilds.com/
+and Windows.
 
 Note that this is a playground currently to see what works and what not. Working
 examples are available in the `examples/` subfolder.
