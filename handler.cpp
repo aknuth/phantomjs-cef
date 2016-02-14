@@ -9,7 +9,6 @@
 #include <iostream>
 #include <locale>
 #include <algorithm>
-#include <iostream>
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -389,7 +388,6 @@ void PhantomJSHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFra
     return;
   }
 
-  //qDebug() << "~~~~ " << frame->GetURL() << " | "<< frame->GetIdentifier();
   /// TODO: is this OK?
   const bool success = httpStatusCode < 400;
   handleLoadEnd(browser, httpStatusCode, frame->GetURL(), success);

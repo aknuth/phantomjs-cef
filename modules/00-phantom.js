@@ -47,11 +47,6 @@ if (!phantom)
     native function exit();
     exit();
   };
-  
-//  phantom.writeFile = function(file,s) {
-//    native function writeFile();
-//    return writeFile(file,s);
-//  };
 
   phantom.injectJs = function(file) {
     var library = phantom.internal.findLibrary(file);
