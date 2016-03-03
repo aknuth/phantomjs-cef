@@ -70,6 +70,7 @@ target_link_libraries(${CEF_TARGET}
   libcef_lib
   libcef_dll_wrapper
   ${CEF_STANDARD_LIBS}
+  Qt5::Core
   Qt5::Gui
 )
 
@@ -96,6 +97,31 @@ if (OS_WINDOWS)
       "Imm32.lib"
       "Winmm.lib"
     )
+endif()
+
+if (OS_LINUX)
+  if (EXISTS "${_qt5Core_install_prefix}/plugins/platforms/libqminimal.a")
+    message(STATUS "static Qt build detected")
+
+    find_package(ZLIB REQUIRED)
+    find_package(PNG REQUIRED)
+    find_package(JPEG REQUIRED)
+
+    target_link_libraries(${CEF_TARGET}
+      "${_qt5Core_install_prefix}/plugins/platforms/libqminimal.a"
+      "${_qt5Core_install_prefix}/lib/libQt5PlatformSupport.a"
+      Qt5::Gui
+      ${CMAKE_DL_LIBS}
+      ${ZLIB_LIBRARIES}
+      ${PNG_LIBRARIES}
+      ${JPEG_LIBRARIES}
+      # FIXME: cleanup
+      pcre16
+      icui18n icuuc
+    )
+
+    add_definitions("-DIMPORT_STATIC_QT_PLUGIN")
+  endif()
 endif()
 
 if(OS_WINDOWS AND USE_SANDBOX)

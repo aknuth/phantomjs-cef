@@ -13,6 +13,7 @@
 
 #include <QGuiApplication>
 #include <QStandardPaths>
+#include <QtPlugin>
 
 #include "app.h"
 
@@ -27,8 +28,11 @@
 #pragma comment(lib, "cef_sandbox.lib")
 #endif
 
-#include <QtPlugin>
 Q_IMPORT_PLUGIN (QWindowsIntegrationPlugin);
+
+#elif defined(IMPORT_STATIC_QT_PLUGIN)
+
+Q_IMPORT_PLUGIN (QMinimalIntegrationPlugin);
 
 #endif
 
