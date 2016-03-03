@@ -2,11 +2,6 @@
 // All rights reserved. Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include "crashdump.h"
-
-#include <exception>
-#include <stdio.h>
-
 #if OS_WIN
 #include <windows.h>
 #endif
@@ -38,7 +33,7 @@ Q_IMPORT_PLUGIN (QMinimalIntegrationPlugin);
 
 #include <iostream>
 
-int inner_main(int argc, char** argv)
+int main(int argc, char** argv)
 {
   void* sandbox_info = NULL;
 
@@ -111,37 +106,4 @@ int inner_main(int argc, char** argv)
   CefShutdown();
 
   return 0;
-}
-
-int main(int argc, char** argv)
-{
-    try {
-        init_crash_handler();
-
-        return inner_main(argc, argv);
-
-        // These last-ditch exception handlers write to the C stderr
-        // because who knows what kind of state Qt is in.  And they avoid
-        // using fprintf because _that_ might be in bad shape too.
-        // (I would drop all the way down to write() but then I'd have to
-        // write the code again for Windows.)
-        //
-        // print_crash_message includes a call to fflush(stderr).
-    } catch (std::bad_alloc) {
-        fputs("Memory exhausted.\n", stderr);
-        fflush(stderr);
-        return 1;
-
-    } catch (std::exception& e) {
-        fputs("Uncaught C++ exception: ", stderr);
-        fputs(e.what(), stderr);
-        putc('\n', stderr);
-        print_crash_message();
-        return 1;
-
-    } catch (...) {
-        fputs("Uncaught nonstandard exception.\n", stderr);
-        print_crash_message();
-        return 1;
-    }
 }

@@ -166,9 +166,7 @@
 
     this.onConsoleMessage = function(message, source, line) {
       native function printError();
-      var d = new Date();
-      var out = d.getHours()+":"+d.getMinutes()+":"+d.getSeconds()+'-'+d.getMilliseconds()
-      printError(out+ ":"+ source + ":" + line + ": " + message);
+      printError(source + ":" + line + ": " + message);
     };
     this.onLoadStarted = function(url) {};
     this.onLoadFinished = function(status,url) {};
