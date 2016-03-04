@@ -27,3 +27,6 @@
 *.out
 *.app
 cef
+build
+.cproject
+.project
