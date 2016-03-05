@@ -18,17 +18,16 @@ There are several ways to get phantomjs-cef ready to start:
 3. Build it on your own:
 
 `a. Linux`
-- You need Qt5.4 at a minimum. If your system doesn't support this or a higher version, please build it first.
 
-      git clone https://github.com/qtproject/qtbase.git
-	  git checkout 5.5.1 (probably in a closer future '5.6.0')
-	  ./configure -opensource -confirm-license -no-pch -release -static -no-opengl -no-xcb -no-linuxfb -no-kms -no-eglfs -no-widgets -no-libinput -no-gstreamer -no-xkbcommon-evdev -no-glib -no-xcb-xlib -no-pulseaudio -no-alsa -no-gtkstyle -no-openssl -no-freetype -no-harfbuzz -nomake examples -gui -no-qpa-platform-guard -qpa minimal
-	  make -j2 # depends on the number of your cores
-	  export PATH=/pathToYourQt551/bin:$PATH
+You need Qt5.4 at a minimum. If your system doesn't support this or a higher version, please build it first.
+
+	git clone https://github.com/qtproject/qtbase.git
+	git checkout 5.5.1 (probably in a closer future '5.6.0')
+	./configure -opensource -confirm-license -no-pch -release -static -no-opengl -no-xcb -no-linuxfb -no-kms -no-eglfs -no-widgets -no-libinput -no-gstreamer -no-xkbcommon-evdev -no-glib -no-xcb-xlib -no-pulseaudio -no-alsa -no-gtkstyle -no-openssl -no-freetype -no-harfbuzz -nomake examples -gui -no-qpa-platform-guard -qpa minimal
+	make -j2 # depends on the number of your cores
+	export PATH=/pathToYourQt551/bin:$PATH
 
 You might need to install a lot of dependencies, which vary from system to system ...
-
-on 
 
 In addition the following tools are also needed (apt-get install):
  - ninja-build 
