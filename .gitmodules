@@ -1,0 +1,3 @@
+[submodule "PhantomJava"]
+	path = PhantomJava
+	url = https://github.com/aknuth/PhantomJava.git
