@@ -7,10 +7,10 @@ RUN apt-get install -y libxcb1 xvfb libjpeg-turbo8 libicu52 libglib2.0-0 libfont
 
 ENV PHANTOMJS_HOME /opt/phantomjs
 
-RUN curl -L -o phantomjs.7z https://doc-0g-5c-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/fk5650vegvv3pkqbr842uku7tdm5pbs9/1457193600000/08025283507272817459/*/0B627fGWpuqypVzVjN0tkR1pBRm8?e=download && \
+RUN curl -L -o phantomjs.7z https://doc-00-5c-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/p259jdta94tn5tgl0i45ltcsli7mqt8v/1457258400000/08025283507272817459/*/0B627fGWpuqypWGRCYUc5eS1VWFU?e=download && \
 	7z x phantomjs.7z && \
 	mkdir ${PHANTOMJS_HOME} && \ 
-	mv build/* ${PHANTOMJS_HOME}/
+	mv Release/* ${PHANTOMJS_HOME}/
 
 RUN adduser phantomjs --disabled-password --system && chown -R phantomjs:users ${PHANTOMJS_HOME}
 
