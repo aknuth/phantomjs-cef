@@ -1,6 +1,14 @@
 "use strict";
 
-var ws = new WebSocket('ws://localhost:8887'),
+var system = require('system'),
+	host = 'localhost';
+
+if (system.args[1]){
+	host = system.args[1];
+}
+
+var wsUrl = 'ws://'+host+':8887',
+	ws = new WebSocket('ws://'+host+':8887'),
     pageMap = new Map();
 
 var setToValue = function (obj, value, path) {

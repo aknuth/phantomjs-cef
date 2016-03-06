@@ -38,6 +38,15 @@ set(PHANTOMJS_SRCS
   debug.cpp
 )
 
+set(SCRIPT_FILE
+	phantomjava.sh
+)
+set(EXAMPLES
+	examples
+)
+set(SCRIPT_DIR
+	scripts
+)
 if (OS_LINUX)
   LIST(APPEND PHANTOMJS_SRCS
     keyevents_linux.cpp
@@ -60,7 +69,8 @@ endif()
 ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 
 # Determine the target output directory.
-SET_CEF_TARGET_OUT_DIR()
+# SET_CEF_TARGET_OUT_DIR()
+set(CEF_TARGET_OUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
 
 # Executable target.
 add_executable(${CEF_TARGET} ${PHANTOMJS_SRCS})
@@ -138,6 +148,9 @@ set_target_properties(${CEF_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CEF_TA
 # Copy binary and resource files to the target output directory.
 COPY_FILES("${CEF_TARGET}" "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${CEF_TARGET_OUT_DIR}")
 COPY_FILES("${CEF_TARGET}" "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${CEF_TARGET_OUT_DIR}")
+
+COPY_FILES("${CEF_TARGET}" "${SCRIPT_FILE}" "${CMAKE_CURRENT_SOURCE_DIR}/${SCRIPT_DIR}" "${CEF_TARGET_OUT_DIR}")
+COPY_FILES("${CEF_TARGET}" "${EXAMPLES}" "${CMAKE_CURRENT_SOURCE_DIR}" "${CEF_TARGET_OUT_DIR}")
 
 #
 # Linux configuration.

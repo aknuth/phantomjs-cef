@@ -446,6 +446,9 @@
     // TODO: cleanup this api?
     //       i.e. a key event and a mouse event function
     //       or take an object of args
+    this.getId = function(){
+      return internal.id;
+    }
     this.sendEvent = function(type, arg1, arg2, arg3, modifier) {
       verifyBrowserCreated();
       return phantom.internal.query({
