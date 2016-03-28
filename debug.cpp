@@ -20,6 +20,8 @@ QDebug operator<<(QDebug stream, const CefString& string)
 }
 
 Q_LOGGING_CATEGORY(handler, "phantomjs.handler", QtWarningMsg)
+//if you want to make this category visible, please uncomment the following line
+//Q_LOGGING_CATEGORY(handler, "phantomjs.handler")
 Q_LOGGING_CATEGORY(print, "phantomjs.print", QtWarningMsg)
 Q_LOGGING_CATEGORY(app, "phantomjs.app", QtWarningMsg)
 Q_LOGGING_CATEGORY(keyevents, "phantomjs.keyevents", QtWarningMsg)

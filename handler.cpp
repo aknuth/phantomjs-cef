@@ -838,24 +838,27 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
   } else if (type == QLatin1String("sendEvent")) {
     const auto event = json.value(QStringLiteral("event")).toString();
     const auto modifiers = json.value(QStringLiteral("modifiers")).toInt();
-    qCDebug(handler) << json << event;
     if (event == QLatin1String("keydown") || event == QLatin1String("keyup") || event == QLatin1String("keypress")) {
       CefKeyEvent keyEvent;
       keyEvent.modifiers = modifiers;
       auto arg1 = json.value(QStringLiteral("arg1"));
       if (arg1.isString()) {
+   	    qCDebug(handler) << json << event << "string";
         foreach (auto c, arg1.toString()) {
           keyEvent.character = c.unicode();
           keyEvent.windows_key_code = c.unicode();
           keyEvent.native_key_code = c.unicode();
-          keyEvent.type = KEYEVENT_KEYDOWN;
-          subBrowser->GetHost()->SendKeyEvent(keyEvent);
-          keyEvent.type = KEYEVENT_CHAR;
-          subBrowser->GetHost()->SendKeyEvent(keyEvent);
-          keyEvent.type = KEYEVENT_KEYUP;
+          if (event == QLatin1String("keydown")) {
+            keyEvent.type = KEYEVENT_KEYDOWN;
+          } else if (event == QLatin1String("keyup")) {
+            keyEvent.type = KEYEVENT_KEYUP;
+          } else {
+            keyEvent.type = KEYEVENT_CHAR;
+          }
           subBrowser->GetHost()->SendKeyEvent(keyEvent);
         }
       } else {
+   	    qCDebug(handler) << json << event << "char";
         if (event == QLatin1String("keydown")) {
           keyEvent.type = KEYEVENT_KEYDOWN;
         } else if (event == QLatin1String("keyup")) {
@@ -863,6 +866,7 @@ bool PhantomJSHandler::OnQuery(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame
         } else {
           keyEvent.type = KEYEVENT_CHAR;
         }
+        qCDebug(handler) << "~~~~~" << arg1.toInt();
         keyEvent.windows_key_code = arg1.toInt();
         keyEvent.native_key_code = vkToNative(keyEvent.native_key_code);
         keyEvent.character = arg1.toInt();

@@ -11,7 +11,7 @@ page.open("http://www.google.com")
     }, "foo");
   })
   .then(function() {
-    return page.sendEvent('keydown', 'a');
+    return page.sendEvent('keydown', 13);
   })
   .then(function() {
     return page.sendEvent('keypress', 'a');
