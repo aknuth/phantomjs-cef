@@ -258,6 +258,46 @@
         pollElement();
       });
     };
+    this.waitForFunctionTrue = function(fn,arg, pollInterval, maxPollAttempts){
+        if (!pollInterval) {
+          pollInterval = 100;
+        }
+        if (!maxPollAttempts) {
+          maxPollAttempts = 50;
+        }
+        return new Promise((accept,reject)=>{
+            if (typeof fn != 'function'){
+                reject('ERROR: fn must be a function');
+            } else if (fn.name == ''){
+                reject('ERROR: fn must be a named function like "function a(){}"');
+            }
+            webpage.inject(fn)
+            .then(()=>{
+                var i = 0;
+                var interval = setInterval(()=>{
+                    webpage.evaluate((name,arg)=>{
+                        try {
+                            var fn = window[name];
+                            var r = Array.isArray(arg)?fn.apply(undefined,arg):fn(arg);
+                            return (typeof r === 'boolean') ? r : false;
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    },fn.name,arg)
+                    .then((data)=>{
+                        i++;
+                        if (data){
+                            accept();
+                            clearInterval(interval);
+                        } else if (i===maxPollAttempts){
+                            reject('Timeout waiting for function === true');
+                            clearInterval(interval);
+                        }
+                    })
+                },pollInterval)
+            })
+        })
+    }    
     this.stop = function() {
       verifyBrowserCreated();
       return phantom.internal.query({type: "stopWebPage", browser: internal.id});
@@ -448,6 +488,39 @@
     //       or take an object of args
     this.getId = function(){
       return internal.id;
+    }
+    this.sendMouseEvent = function(type, selector) {
+        return webpage.evaluate(function(selector){
+            if (Array.isArray(selector)){
+                var frame = document.querySelector(selector[0]);
+                var element = document.querySelector(selector[0]).contentDocument.querySelector(selector[1]);
+                if (!frame){
+                    throw Error("no frame found with selector:" + selector[0]);
+                } else if (!element){
+                    throw Error("no element found with selector:" + selector[1]);
+                }
+                var frame_bcr = frame.getBoundingClientRect();
+                var bcr = element.getBoundingClientRect();
+                var offset = {'top':bcr.top+frame_bcr.top,'left':bcr.left+frame_bcr.left};
+                return offset;
+            } else {
+                var element = document.querySelector(selector);
+                if (!element){
+                    throw Error("no element found with selector:" + selector);
+                }
+                return element.getBoundingClientRect();
+            }
+        }, selector)
+        .then((offset) =>{
+        	var isArray = Array.isArray(selector);
+        	let left = isArray?'[':'\'';
+        	let right = isArray?']':'\'';
+        	console.log('coordinates of the element '+left+selector+right+' are x:'+offset.left + ' | y:' +  offset.top);
+            return webpage.sendEvent(type, offset.left + 5, offset.top + 5);
+        })
+        .catch(function(err) {
+        	throw err;
+        })        
     }
     this.sendEvent = function(type, arg1, arg2, arg3, modifier) {
       verifyBrowserCreated();
