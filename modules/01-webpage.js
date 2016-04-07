@@ -513,8 +513,8 @@
         }, selector)
         .then((offset) =>{
         	var isArray = Array.isArray(selector);
-        	let left = isArray?'[':'\'';
-        	let right = isArray?']':'\'';
+        	var left = isArray?'[':'\'';
+        	var right = isArray?']':'\'';
         	console.log('coordinates of the element '+left+selector+right+' are x:'+offset.left + ' | y:' +  offset.top);
             return webpage.sendEvent(type, offset.left + 5, offset.top + 5);
         })
